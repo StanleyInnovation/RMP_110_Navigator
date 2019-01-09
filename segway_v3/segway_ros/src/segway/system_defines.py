@@ -1,45 +1,32 @@
 """--------------------------------------------------------------------
-COPYRIGHT 2014 Stanley Innovation Inc.
+COPYRIGHT 2018 Waypoint Robotics Inc.
 
 Software License Agreement:
 
-The software supplied herewith by Stanley Innovation Inc. (the "Company") 
-for its licensed Segway RMP Robotic Platforms is intended and supplied to you, 
-the Company's customer, for use solely and exclusively with Stanley Innovation 
-products. The software is owned by the Company and/or its supplier, and is 
-protected under applicable copyright laws.  All rights are reserved. Any use in 
-violation of the foregoing restrictions may subject the user to criminal 
-sanctions under applicable laws, as well as to civil liability for the 
-breach of the terms and conditions of this license. The Company may 
-immediately terminate this Agreement upon your use of the software with 
-any products that are not Stanley Innovation products.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-The software was written using Python programming language.  Your use 
-of the software is therefore subject to the terms and conditions of the 
-OSI- approved open source license viewable at http://www.python.org/.  
-You are solely responsible for ensuring your compliance with the Python 
-open source license.
+1. Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
 
-You shall indemnify, defend and hold the Company harmless from any claims, 
-demands, liabilities or expenses, including reasonable attorneys fees, incurred 
-by the Company as a result of any claim or proceeding against the Company 
-arising out of or based upon: 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
 
-(i) The combination, operation or use of the software by you with any hardware, 
-    products, programs or data not supplied or approved in writing by the Company, 
-    if such claim or proceeding would have been avoided but for such combination, 
-    operation or use.
- 
-(ii) The modification of the software by or on behalf of you 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software without
+specific prior written permission.
 
-(iii) Your use of the software.
-
- THIS SOFTWARE IS PROVIDED IN AN "AS IS" CONDITION. NO WARRANTIES,
- WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT LIMITED
- TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. THE COMPANY SHALL NOT,
- IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL OR
- CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  \file   system_defines.py
 
@@ -221,11 +208,27 @@ X2_WHEEL_TRACK_WIDTH_M     = 0.7112
 OMNI_WHEEL_TRACK_WIDTH_M   = 0.693
 
 """------------------------------------------------------------------------
+32-bit floating point variable representing yaw correction factor for omni.
+It is the correction factor for roller angle and floor surface generally close to 1.0.
+------------------------------------------------------------------------"""
+OMNI_YAW_CORRECTION_INDEX  = (10)
+MAX_OMNI_YAW_CORRECTION    = 0.0
+MIN_OMNI_YAW_CORRECTION    = 5.0
+
+"""------------------------------------------------------------------------
+32-bit floating point variable representing straffe correction factor for omni.
+It is the correction factor for roller angle and floor surface generally close to 1.0.
+------------------------------------------------------------------------"""
+OMNI_YAW_CORRECTION_INDEX  = (11)
+MAX_OMNI_YAW_CORRECTION    = 0.0
+MIN_OMNI_YAW_CORRECTION    = 5.0
+
+"""------------------------------------------------------------------------
 32-bit IEEE754 floating point variable representing gear ratio (unitless).
 This updates the gearbox ratio used in software to convert from motor speed 
 to gearbox output speed 
 ------------------------------------------------------------------------"""
-GEAR_RATIO_INDEX            = (10)
+GEAR_RATIO_INDEX            = (12)
 MAX_GEAR_RATIO              = 200.0
 MIN_GEAR_RATIO              = 1.0
 
@@ -238,7 +241,7 @@ SEGWAY_STANDARD_GEAR_RATIO  = 24.2667
 32-bit integer variable with configuration bits representing each variable defined below.
 This bitmap setscertain behaviors that need to be defined at startup
 ------------------------------------------------------------------------"""
-CONFIG_BITMAP_INDEX         = (11)
+CONFIG_BITMAP_INDEX         = (13)
 
 """
 Enables or disables the machines sounds
@@ -257,6 +260,12 @@ Enables users ability to enter balance mode (220 only)
 """
 BALANCE_MODE_DISABLED         = 0
 BALANCE_MODE_ENABLED          = 1
+
+"""
+Enables IMU AHS correction if IMU installed
+"""
+IMU_AHS_CORR_DISABLED         = 0
+IMU_AHS_CORR_ENABLED          = 1
 
 """
 Selects gain schedule for balancing platforms (220 only; see manual)
@@ -289,6 +298,7 @@ BALANCE_GAIN_SCHEDULE_SHIFT  = 2
 BALANCE_MODE_LOCKOUT_SHIFT   = 6
 VEL_CTL_FILTER_SHIFT         = 7
 YAW_CTL_FILTER_SHIFT         = 11
+ENABLE_IMU_AHS_CORR_SHIFT    = 15
 
 """
 CONFIG_BITMAP_EXAMPLE = ((ALLOW_MACHINE_AUDIO    << AUDIO_SILENCE_REQUEST_SHIFT) |
@@ -296,7 +306,8 @@ CONFIG_BITMAP_EXAMPLE = ((ALLOW_MACHINE_AUDIO    << AUDIO_SILENCE_REQUEST_SHIFT)
                          (BALANCE_GAINS_DEFAULT  << BALANCE_GAIN_SCHEDULE_SHIFT) |
                          (BALANCE_MODE_DISABLED  << BALANCE_MODE_LOCKOUT_SHIFT)  |
                          (CTL_INPUT_10HZ_FILTER  << VEL_CTL_FILTER_SHIFT)        |
-                         (CTL_INPUT_10HZ_FILTER  << YAW_CTL_FILTER_SHIFT))
+                         (CTL_INPUT_10HZ_FILTER  << YAW_CTL_FILTER_SHIFT)        |
+                         (IMU_AHS_CORR_DISABLED  << ENABLE_IMU_AHS_CORR_SHIFT)
 """
 
 
@@ -676,161 +687,144 @@ NUM_OF_FAULTGROUPS      = 8
 """
 Defines the feedback array indices
 """
-START_STATUS_BLOCK                    =(0)
+START_STATUS_BLOCK                     =(0)
+CCU_FSW_1_INDEX                        =(0)
+CCU_FSW_2_INDEX                        =(1)
+CCU_FSW_3_INDEX                        =(2)
+CCU_FSW_4_INDEX                        =(3)
+CCU_MCU_0_FSW_INDEX                    =(4)
+CCU_MCU_1_FSW_INDEX                    =(5)
+CCU_MCU_2_FSW_INDEX                    =(6)
+CCU_MCU_3_FSW_INDEX                    =(7)
+CCU_FRAME_COUNT_INDEX                  =(8)
+CCU_OPERATIONAL_STATE_INDEX            =(9)
+CCU_DYNAMIC_RESPONSE_INDEX             =(10)
+CCU_PACKED_BUILDID_INDEX               =(11)
+CCU_MACHINE_ID_INDEX                   =(12)
+END_STATUS_BLOCK                       =(13)
 
-CCU_FSW_1_INDEX                       =(0)
-CCU_FSW_2_INDEX                       =(1)
-CCU_FSW_3_INDEX                       =(2)
-CCU_FSW_4_INDEX                       =(3)
-CCU_MCU_0_FSW_INDEX                   =(4)
-CCU_MCU_1_FSW_INDEX                   =(5)
-CCU_MCU_2_FSW_INDEX                   =(6)
-CCU_MCU_3_FSW_INDEX                   =(7)
-CCU_FRAME_COUNT_INDEX                 =(8)
-CCU_OPERATIONAL_STATE_INDEX           =(9)
-CCU_DYNAMIC_RESPONSE_INDEX            =(10)
-CCU_PACKED_BUILDID_INDEX              =(11)
-CCU_MACHINE_ID_INDEX                  =(12)
-END_STATUS_BLOCK                      =(13)
+START_PROPULSION_POWER_BLOCK           =(13)
+CCU_MIN_PROP_SOC_INDEX                 =(13)
+CCU_MCU_0_SOC_INDEX                    =(14)
+CCU_MCU_1_SOC_INDEX                    =(15)
+CCU_MCU_2_SOC_INDEX                    =(16)
+CCU_MCU_3_SOC_INDEX                    =(17)
+CCU_MCU_0_TEMP_INDEX                   =(18)
+CCU_MCU_1_TEMP_INDEX                   =(19)
+CCU_MCU_2_TEMP_INDEX                   =(20)
+CCU_MCU_3_TEMP_INDEX                   =(21)
+CCU_MCU_0_INST_POWER_INDEX             =(22)
+CCU_MCU_1_INST_POWER_INDEX             =(23)
+CCU_MCU_2_INST_POWER_INDEX             =(24)
+CCU_MCU_3_INST_POWER_INDEX             =(25)
+CCU_MCU_0_TOTAL_ENERGY_INDEX           =(26)
+CCU_MCU_1_TOTAL_ENERGY_INDEX           =(27)
+CCU_MCU_2_TOTAL_ENERGY_INDEX           =(28)
+CCU_MCU_3_TOTAL_ENERGY_INDEX           =(29)
+CCU_RF_MOTOR_CURRENT_INDEX             =(30)
+CCU_LF_MOTOR_CURRENT_INDEX             =(31)
+CCU_RR_MOTOR_CURRENT_INDEX             =(32)
+CCU_LR_MOTOR_CURRENT_INDEX             =(33)
+CCU_MAX_MOTOR_CURRENT_INDEX            =(34)
+CCU_RF_MOTOR_CURRENT_LIMIT_INDEX       =(35)
+CCU_LF_MOTOR_CURRENT_LIMIT_INDEX       =(36)
+CCU_RR_MOTOR_CURRENT_LIMIT_INDEX       =(37)
+CCU_LR_MOTOR_CURRENT_LIMIT_INDEX       =(38)
+CCU_MIN_CURRENT_LIMIT_INDEX            =(39)
+END_PROPULSION_POWER_BLOCK             =(40)
 
-START_PROPULSION_POWER_BLOCK          =(13)
+START_AUX_POWER_BLOCK                  =(40)
+CCU_AUX_0_SOC_INDEX                    =(40)
+CCU_AUX_1_SOC_INDEX                    =(41)
+CCU_AUX_0_VOLTAGE_INDEX                =(42)
+CCU_AUX_1_VOLTAGE_INDEX                =(43)
+CCU_AUX_0_CURRENT_INDEX                =(44)
+CCU_AUX_1_CURRENT_INDEX                =(45)
+CCU_AUX_0_TEMP_INDEX                   =(46)
+CCU_AUX_1_TEMP_INDEX                   =(47)
+CCU_AUX_0_SYS_STATUS_INDEX             =(48)
+CCU_AUX_1_SYS_STATUS_INDEX             =(49)
+CCU_AUX_0_BCU_STATUS_INDEX             =(50)
+CCU_AUX_1_BCU_STATUS_INDEX             =(51)
+CCU_AUX_0_BCU_FAULTS_INDEX             =(52)
+CCU_AUX_1_BCU_FAULTS_INDEX             =(53)
+CCU_7P2V_BATTERY_VOLTAGE_INDEX         =(54)
+											   
+END_AUX_POWER_BLOCK                    =(55)
 
-CCU_MIN_PROP_SOC_INDEX                =(13)
-CCU_MCU_0_SOC_INDEX                   =(14)
-CCU_MCU_1_SOC_INDEX                   =(15)
-CCU_MCU_2_SOC_INDEX                   =(16)
-CCU_MCU_3_SOC_INDEX                   =(17)
-CCU_MCU_0_TEMP_INDEX                  =(18)
-CCU_MCU_1_TEMP_INDEX                  =(19)
-CCU_MCU_2_TEMP_INDEX                  =(20)
-CCU_MCU_3_TEMP_INDEX                  =(21)
-CCU_MCU_0_INST_POWER_INDEX            =(22)
-CCU_MCU_1_INST_POWER_INDEX            =(23)
-CCU_MCU_2_INST_POWER_INDEX            =(24)
-CCU_MCU_3_INST_POWER_INDEX            =(25)
-CCU_MCU_0_TOTAL_ENERGY_INDEX          =(26)
-CCU_MCU_1_TOTAL_ENERGY_INDEX          =(27)
-CCU_MCU_2_TOTAL_ENERGY_INDEX          =(28)
-CCU_MCU_3_TOTAL_ENERGY_INDEX          =(29)
-CCU_RF_MOTOR_CURRENT_INDEX            =(30)
-CCU_LF_MOTOR_CURRENT_INDEX            =(31)
-CCU_RR_MOTOR_CURRENT_INDEX            =(32)
-CCU_LR_MOTOR_CURRENT_INDEX            =(33)
-CCU_MAX_MOTOR_CURRENT_INDEX           =(34)
-CCU_RF_MOTOR_CURRENT_LIMIT_INDEX      =(35)
-CCU_LF_MOTOR_CURRENT_LIMIT_INDEX      =(36)
-CCU_RR_MOTOR_CURRENT_LIMIT_INDEX      =(37)
-CCU_LR_MOTOR_CURRENT_LIMIT_INDEX      =(38)
-CCU_MIN_CURRENT_LIMIT_INDEX           =(39)
-END_PROPULSION_POWER_BLOCK            =(40)
+START_IMU_BLOCK                        =(55)
+CCU_INERTIAL_X_ACC_INDEX               =(55)
+CCU_INERTIAL_Y_ACC_INDEX               =(56)
+CCU_INERTIAL_X_RATE_INDEX              =(57)
+CCU_INERTIAL_Y_RATE_INDEX              =(58)
+CCU_INERTIAL_Z_RATE_INDEX              =(59)
+CCU_PSE_PITCH_INDEX                    =(60)
+CCU_PSE_PITCH_RATE_INDEX               =(61)
+CCU_PSE_ROLL_INDEX                     =(62)
+CCU_PSE_ROLL_RATE_INDEX                =(63)
+CCU_PSE_YAW_RATE_INDEX                 =(64)
+CCU_PSE_DATA_VALID_INDEX               =(65)
+CCU_IMU_X_ACCEL_INDEX                  =(66)
+CCU_IMU_Y_ACCEL_INDEX                  =(67)
+CCU_IMU_Z_ACCEL_INDEX                  =(68)
+CCU_IMU_X_GYRO_INDEX                   =(69)
+CCU_IMU_Y_GYRO_INDEX                   =(70)
+CCU_IMU_Z_GYRO_INDEX                   =(71)
+CCU_IMU_X_MAG_INDEX                    =(72)
+CCU_IMU_Y_MAG_INDEX                    =(73)
+CCU_IMU_Z_MAG_INDEX                    =(74)
+CCU_IMU_ROLL_INDEX                     =(75)
+CCU_IMU_PITCH_INDEX                    =(76)
+CCU_IMU_YAW_INDEX                      =(77)
+CCU_IMU_TIMESTAMP_INDEX                =(78)
+CCU_IMU_STATUS_INDEX                   =(79)
+END_IMU_BLOCK                          =(80)
 
-START_AUX_POWER_BLOCK                 =(40)
+START_DYNAMICS_BLOCK                   =(80)
+CCU_X_VEL_TARGET_INDEX                 =(80)
+CCU_Y_VEL_TARGET_INDEX                 =(81)
+CCU_YAW_TARGET_INDEX                   =(82)
+CCU_YAW_RATE_LIMIT_INDEX               =(83)
+CCU_VELOCITY_LIMIT_INDEX               =(84)
+CCU_RF_WHEEL_VEL_INDEX                 =(85)
+CCU_LF_WHEEL_VEL_INDEX                 =(86)
+CCU_RR_WHEEL_VEL_INDEX                 =(87)
+CCU_LR_WHEEL_VEL_INDEX                 =(88)
+CCU_RF_WHEEL_POS_INDEX                 =(89)
+CCU_LF_WHEEL_POS_INDEX                 =(90)
+CCU_RR_WHEEL_POS_INDEX                 =(91)
+CCU_LR_WHEEL_POS_INDEX                 =(92)
+CCU_ODOM_X_ACCEL_INDEX				   =(93)
+CCU_ODOM_Y_ACCEL_INDEX				   =(94)
+CCU_ODOM_YAW_ACCEL_INDEX    		   =(95)
+CCU_ODOM_X_VELOCITY_INDEX		       =(96)
+CCU_ODOM_Y_VELOCITY_INDEX		       =(97)
+CCU_ODOM_YAW_VELOCITY_INDEX    		   =(98)
+CCU_ODOM_X_POSITION_INDEX              =(99)
+CCU_ODOM_Y_POSITION_INDEX              =(100)
+CCU_ODOM_YAW_POSITION_INDEX            =(101)
+END_DYNAMICS_BLOCK                     =(102)
 
-CCU_AUX_0_SOC_INDEX                   =(40)
-CCU_AUX_1_SOC_INDEX                   =(41)
-CCU_AUX_0_VOLTAGE_INDEX               =(42)
-CCU_AUX_1_VOLTAGE_INDEX               =(43)
-CCU_AUX_0_CURRENT_INDEX               =(44)
-CCU_AUX_1_CURRENT_INDEX               =(45)
-CCU_AUX_0_TEMP_INDEX                  =(46)
-CCU_AUX_1_TEMP_INDEX                  =(47)
-CCU_AUX_0_SYS_STATUS_INDEX            =(48)
-CCU_AUX_1_SYS_STATUS_INDEX            =(49)
-CCU_AUX_0_BCU_STATUS_INDEX            =(50)
-CCU_AUX_1_BCU_STATUS_INDEX            =(51)
-CCU_AUX_0_BCU_FAULTS_INDEX            =(52)
-CCU_AUX_1_BCU_FAULTS_INDEX            =(53)
-CCU_7P2V_BATTERY_VOLTAGE_INDEX        =(54)
-END_AUX_POWER_BLOCK                   =(55)
-
-START_IMU_BLOCK                       =(55)
-
-CCU_INERTIAL_X_ACC_INDEX              =(55)
-CCU_INERTIAL_Y_ACC_INDEX              =(56)
-CCU_INERTIAL_X_RATE_INDEX             =(57)
-CCU_INERTIAL_Y_RATE_INDEX             =(58)
-CCU_INERTIAL_Z_RATE_INDEX             =(59)
-CCU_PSE_PITCH_INDEX                   =(60)
-CCU_PSE_PITCH_RATE_INDEX              =(61)
-CCU_PSE_ROLL_INDEX                    =(62)
-CCU_PSE_ROLL_RATE_INDEX               =(63)
-CCU_PSE_YAW_RATE_INDEX                =(64)
-CCU_PSE_DATA_VALID_INDEX              =(65)
-CCU_AHRS_X_ACCEL_INDEX                =(66)
-CCU_AHRS_Y_ACCEL_INDEX                =(67)
-CCU_AHRS_Z_ACCEL_INDEX                =(68)
-CCU_AHRS_X_GYRO_INDEX                 =(69)
-CCU_AHRS_Y_GYRO_INDEX                 =(70)
-CCU_AHRS_Z_GYRO_INDEX                 =(71)
-CCU_AHRS_X_MAG_INDEX                  =(72)
-CCU_AHRS_Y_MAG_INDEX                  =(73)
-CCU_AHRS_Z_MAG_INDEX                  =(74)
-CCU_AHRS_ROLL_INDEX                   =(75)
-CCU_AHRS_PITCH_INDEX                  =(76)
-CCU_AHRS_YAW_INDEX                    =(77)
-CCU_AHRS_TIMESTAMP_INDEX              =(78)
-CCU_GPS_LATITUDE_HWORD_INDEX          =(79)
-CCU_GPS_LATITUDE_LWORD_INDEX          =(80)
-CCU_GPS_LONGTITUDE_HWORD_INDEX        =(81)
-CCU_GPS_LONGTITUDE_LWORD_INDEX        =(82)
-CCU_GPS_EL_HEIGHT_HWORD_INDEX         =(83)
-CCU_GPS_EL_HEIGHT_LWORD_INDEX         =(84)
-CCU_GPS_MSL_HEIGHT_HWORD_INDEX        =(85)
-CCU_GPS_MSL_HEIGHT_LWORD_INDEX        =(86)
-CCU_GPS_HORIZONTAL_STDEV_INDEX        =(87)
-CCU_GPS_VERTICAL_STDEV_INDEX          =(88)
-CCU_GPS_VALID_LLH_FLAG_INDEX          =(89)
-CCU_GPS_PACKED_FIX_INFO_INDEX         =(90)
-CCU_GPS_PACKED_HW_STATUS_INDEX        =(91)
-CCU_IMU_STATUS_INDEX                  =(92)
-CCU_IMU_ERROR_INDEX                   =(93)
-END_IMU_BLOCK                         =(94)
-
-START_DYNAMICS_BLOCK                  =(94)
-
-CCU_X_VEL_TARGET_INDEX                =(94)
-CCU_Y_VEL_TARGET_INDEX                =(95)
-CCU_YAW_TARGET_INDEX                  =(96)
-CCU_YAW_RATE_LIMIT_INDEX              =(97)
-CCU_VELOCITY_LIMIT_INDEX              =(98)
-CCU_RF_WHEEL_VEL_INDEX                =(99)
-CCU_LF_WHEEL_VEL_INDEX                =(100)
-CCU_RR_WHEEL_VEL_INDEX                =(101)
-CCU_LR_WHEEL_VEL_INDEX                =(102)
-CCU_RF_WHEEL_POS_INDEX                =(103)
-CCU_LF_WHEEL_POS_INDEX                =(104)
-CCU_RR_WHEEL_POS_INDEX                =(105)
-CCU_LR_WHEEL_POS_INDEX                =(106)
-CCU_ODOM_X_ACCEL_INDEX				  =(107)
-CCU_ODOM_Y_ACCEL_INDEX				  =(108)
-CCU_ODOM_YAW_ACCEL_INDEX    		  =(109)
-CCU_ODOM_X_VELOCITY_INDEX		      =(110)
-CCU_ODOM_Y_VELOCITY_INDEX		      =(111)
-CCU_ODOM_YAW_VELOCITY_INDEX    		  =(112)
-CCU_ODOM_X_POSITION_INDEX             =(113)
-CCU_ODOM_Y_POSITION_INDEX             =(114)
-CCU_ODOM_YAW_POSITION_INDEX           =(115)
-END_DYNAMICS_BLOCK                    =(116)
-
-START_CONFIG_BLOCK                    =(116)
-
-CCU_FRAM_VEL_LIMIT_INDEX              =(116)
-CCU_FRAM_ACCEL_LIMIT_INDEX            =(117)
-CCU_FRAM_DECEL_LIMIT_INDEX            =(118)
-CCU_FRAM_MAX_DTZ_DECEL_INDEX          =(119)
-CCU_FRAM_YAW_RATE_LIMIT_INDEX         =(120)
-CCU_FRAM_YAW_ACCEL_LIMIT_INDEX        =(121)
-CCU_FRAM_LATERAL_ACCEL_LIMIT_INDEX    =(122)
-CCU_FRAM_TIRE_DIAMETER_INDEX          =(123)
-CCU_FRAM_WHEEL_BASE_LENGTH_INDEX      =(124)
-CCU_FRAM_WHEEL_TRACK_WIDTH_INDEX      =(125)
-CCU_FRAM_TRANSMISSION_RATIO_INDEX     =(126)
-CCU_FRAM_CFG_BITMAP_INDEX             =(127)
-CCU_FRAM_ETH_IP_ADDRESS_INDEX         =(128)
-CCU_FRAM_ETH_PORT_NUMBER_INDEX        =(129)
-CCU_FRAM_ETH_SUBNET_MASK_INDEX        =(130)
-CCU_FRAM_ETH_GATEWAY_INDEX            =(131)
-END_CONFIG_BLOCK                      =(132)
+START_CONFIG_BLOCK                     =(102)
+CCU_FRAM_VEL_LIMIT_INDEX               =(102)
+CCU_FRAM_ACCEL_LIMIT_INDEX             =(103)
+CCU_FRAM_DECEL_LIMIT_INDEX             =(104)
+CCU_FRAM_MAX_DTZ_DECEL_INDEX           =(105)
+CCU_FRAM_YAW_RATE_LIMIT_INDEX          =(106)
+CCU_FRAM_YAW_ACCEL_LIMIT_INDEX         =(107)
+CCU_FRAM_LATERAL_ACCEL_LIMIT_INDEX     =(108)
+CCU_FRAM_TIRE_DIAMETER_INDEX           =(109)
+CCU_FRAM_WHEEL_BASE_LENGTH_INDEX       =(110)
+CCU_FRAM_WHEEL_TRACK_WIDTH_INDEX       =(111)
+CCU_FRAM_OMNI_YAW_CORRECTION_INDEX     =(112)
+CCU_FRAM_OMNI_STRAFFE_CORRECTION_INDEX =(113)
+CCU_FRAM_TRANSMISSION_RATIO_INDEX      =(114)
+CCU_FRAM_CFG_BITMAP_INDEX              =(115)
+CCU_FRAM_ETH_IP_ADDRESS_INDEX          =(116)
+CCU_FRAM_ETH_PORT_NUMBER_INDEX         =(117)
+CCU_FRAM_ETH_SUBNET_MASK_INDEX         =(118)
+CCU_FRAM_ETH_GATEWAY_INDEX             =(119)
+END_CONFIG_BLOCK                       =(120)
 
 NUMBER_OF_CONFIG_PARAM_VARIABLES      =(END_CONFIG_BLOCK - START_CONFIG_BLOCK)
 NUMBER_OF_RMP_RSP_WORDS               =(END_CONFIG_BLOCK)

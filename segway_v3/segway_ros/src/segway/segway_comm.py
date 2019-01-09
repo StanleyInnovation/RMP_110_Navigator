@@ -1,45 +1,32 @@
 """--------------------------------------------------------------------
-COPYRIGHT 2014 Stanley Innovation Inc.
+COPYRIGHT 2018 Waypoint Robotics Inc.
 
 Software License Agreement:
 
-The software supplied herewith by Stanley Innovation Inc. (the "Company") 
-for its licensed Segway RMP Robotic Platforms is intended and supplied to you, 
-the Company's customer, for use solely and exclusively with Stanley Innovation 
-products. The software is owned by the Company and/or its supplier, and is 
-protected under applicable copyright laws.  All rights are reserved. Any use in 
-violation of the foregoing restrictions may subject the user to criminal 
-sanctions under applicable laws, as well as to civil liability for the 
-breach of the terms and conditions of this license. The Company may 
-immediately terminate this Agreement upon your use of the software with 
-any products that are not Stanley Innovation products.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-The software was written using Python programming language.  Your use 
-of the software is therefore subject to the terms and conditions of the 
-OSI- approved open source license viewable at http://www.python.org/.  
-You are solely responsible for ensuring your compliance with the Python 
-open source license.
+1. Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
 
-You shall indemnify, defend and hold the Company harmless from any claims, 
-demands, liabilities or expenses, including reasonable attorneys fees, incurred 
-by the Company as a result of any claim or proceeding against the Company 
-arising out of or based upon: 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
 
-(i) The combination, operation or use of the software by you with any hardware, 
-    products, programs or data not supplied or approved in writing by the Company, 
-    if such claim or proceeding would have been avoided but for such combination, 
-    operation or use.
- 
-(ii) The modification of the software by or on behalf of you 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software without
+specific prior written permission.
 
-(iii) Your use of the software.
-
- THIS SOFTWARE IS PROVIDED IN AN "AS IS" CONDITION. NO WARRANTIES,
- WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT LIMITED
- TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. THE COMPANY SHALL NOT,
- IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL OR
- CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  \file   segway_comm.py
 
@@ -278,6 +265,7 @@ class SegwayDriver:
                 try:
                     data = result[0][0].recv()
                     self._handle_rsp(data)
+                    
                 except:
                     rospy.logdebug("select did not return interface data")
 
@@ -367,7 +355,8 @@ class SegwayDriver:
                          (config.balace_gains << BALANCE_GAIN_SCHEDULE_SHIFT)|
                          (config.balance_mode_enabled << BALANCE_MODE_LOCKOUT_SHIFT) |
                          (config.vel_ctl_input_filter << VEL_CTL_FILTER_SHIFT) |
-                         (config.yaw_ctl_input_filter << YAW_CTL_FILTER_SHIFT))
+                         (config.yaw_ctl_input_filter << YAW_CTL_FILTER_SHIFT) |
+                         (config.imu_ahs_correction_enabled << ENABLE_IMU_AHS_CORR_SHIFT))
         
         """
         Define the configuration parameters for all the platforms
@@ -383,27 +372,32 @@ class SegwayDriver:
                                    convert_float_to_u32(config.tire_rolling_diameter_m),
                                    convert_float_to_u32(config.wheel_base_length_m),
                                    convert_float_to_u32(config.wheel_track_width_m),
+                                   convert_float_to_u32(config.omni_yaw_correction_factor),
+                                   convert_float_to_u32(config.omni_straffe_correction_factor),
                                    convert_float_to_u32(config.gear_ratio),
                                    config_bitmap]]
         
         rospy.loginfo("Reconfigure Requested!")
-        rospy.loginfo("vel_limit_mps:            %f"%config.vel_limit_mps)
-        rospy.loginfo("accel_limit_mps2:         %f"%config.accel_limit_mps2)
-        rospy.loginfo("decel_limit_mps2:         %f"%config.decel_limit_mps2)
-        rospy.loginfo("dtz_decel_limit_mps2:     %f"%config.dtz_decel_limit_mps2)
-        rospy.loginfo("yaw_rate_limit_rps:       %f"%config.yaw_rate_limit_rps)
-        rospy.loginfo("yaw_accel_limit_rps2:     %f"%config.yaw_accel_limit_rps2)
-        rospy.loginfo("lateral_accel_limit_mps2: %f"%config.lateral_accel_limit_mps2)
-        rospy.loginfo("tire_rolling_diameter_m:  %f"%config.tire_rolling_diameter_m)
-        rospy.loginfo("wheel_base_length_m:      %f"%config.wheel_base_length_m)
-        rospy.loginfo("wheel_track_width_m:      %f"%config.wheel_track_width_m)
-        rospy.loginfo("gear_ratio:               %f"%config.gear_ratio)
-        rospy.loginfo("enable_audio:             %u"%config.enable_audio)
-        rospy.loginfo("motion_while_charging:    %u"%config.motion_while_charging)
-        rospy.loginfo("balance_mode_enabled:     %u"%config.balance_mode_enabled)
-        rospy.loginfo("balance_gain_schedule:    %u"%config.balace_gains)
-        rospy.loginfo("vel_ctl_input_filter:     %u"%config.vel_ctl_input_filter)
-        rospy.loginfo("yaw_ctl_input_filter:     %u"%config.yaw_ctl_input_filter)
+        rospy.loginfo("vel_limit_mps:                   %f"%config.vel_limit_mps)
+        rospy.loginfo("accel_limit_mps2:                %f"%config.accel_limit_mps2)
+        rospy.loginfo("decel_limit_mps2:                %f"%config.decel_limit_mps2)
+        rospy.loginfo("dtz_decel_limit_mps2:            %f"%config.dtz_decel_limit_mps2)
+        rospy.loginfo("yaw_rate_limit_rps:              %f"%config.yaw_rate_limit_rps)
+        rospy.loginfo("yaw_accel_limit_rps2:            %f"%config.yaw_accel_limit_rps2)
+        rospy.loginfo("lateral_accel_limit_mps2:        %f"%config.lateral_accel_limit_mps2)
+        rospy.loginfo("tire_rolling_diameter_m:         %f"%config.tire_rolling_diameter_m)
+        rospy.loginfo("wheel_base_length_m:             %f"%config.wheel_base_length_m)
+        rospy.loginfo("wheel_track_width_m:             %f"%config.wheel_track_width_m)
+        rospy.loginfo("omni_yaw_correction_factor:      %f"%config.omni_yaw_correction_factor)
+        rospy.loginfo("omni_straffe_correction_factor:  %f"%config.omni_yaw_correction_factor)
+        rospy.loginfo("gear_ratio:                      %f"%config.gear_ratio)
+        rospy.loginfo("enable_audio:                    %u"%config.enable_audio)
+        rospy.loginfo("motion_while_charging:           %u"%config.motion_while_charging)
+        rospy.loginfo("balance_mode_enabled:            %u"%config.balance_mode_enabled)
+        rospy.loginfo("balance_gain_schedule:           %u"%config.balace_gains)
+        rospy.loginfo("vel_ctl_input_filter:            %u"%config.vel_ctl_input_filter)
+        rospy.loginfo("yaw_ctl_input_filter:            %u"%config.yaw_ctl_input_filter)
+        rospy.loginfo("imu_ahs_correction_enabled:      %u"%config.imu_ahs_correction_enabled)
              
         """
         The teleop limits are always the minimum of the actual machine limit and the ones set for teleop
@@ -438,7 +432,7 @@ class SegwayDriver:
             Just update the peak torque as it is not a persistant command
             """
             
-            if ((1<<17) == ((1<<17)&level)):
+            if ((1<<19) == ((1<<19)&level)):
                 rospy.loginfo("level is %u"%level)
                 cmd = [GENERAL_PURPOSE_CMD_ID,
                        [GENERAL_PURPOSE_CMD_SET_TORQUE_LIMIT,

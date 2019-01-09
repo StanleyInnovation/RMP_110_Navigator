@@ -12,6 +12,8 @@ float32 yaw_rate_limit_rps
 float32 yaw_accel_limit_rps2
 float32 tire_diameter_m
 float32 wheelbase_length_m
+float32 omni_yaw_correction_factor
+float32 omni_straffe_correction_factor
 float32 wheel_track_width_m
 float32 gear_ratio
 uint32 config_bitmap

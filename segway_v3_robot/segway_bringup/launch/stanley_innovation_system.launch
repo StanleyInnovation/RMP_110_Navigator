@@ -13,26 +13,11 @@
     <node pkg="si_utils" type="timed_roslaunch"
         args="3 segway_bringup segway.launch"
         name="platform_bringup" output="screen"/>
-        
-    <!-- Platform Arm Manipulation drivers -->
-    <!--node pkg="si_utils" type="timed_roslaunch"
-        args="1 segway_bringup segway_manipulation.launch"
-        name="manipulation_bringup" output="screen"/-->
-        
-    <!-- Platform Head Pan/Tilt drivers -->
-    <!--node pkg="si_utils" type="timed_roslaunch"
-        args="1 segway_bringup segway_pan_tilt.launch"
-        name="pan_tilt_bringup" output="screen"/-->
 
     <!-- Sensor bringup for platforms that contain sensors-->
     <node pkg="si_utils" type="timed_roslaunch"
         args="5 segway_bringup segway_sensors.launch"
         name="sensor_bringup" output="screen"/>
-        
-    <!-- Moveit bringup-->
-    <!--node pkg="si_utils" type="timed_roslaunch"
-        args="8 segway_bringup segway_moveit.launch"
-        name="segway_moveit_bringup" output="screen"/-->
 
     <!-- Platform Teleoperation -->
     <node pkg="si_utils" type="timed_roslaunch"

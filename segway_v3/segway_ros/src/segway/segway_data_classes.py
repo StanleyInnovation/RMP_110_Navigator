@@ -1,45 +1,32 @@
 """--------------------------------------------------------------------
-COPYRIGHT 2014 Stanley Innovation Inc.
+COPYRIGHT 2018 Waypoint Robotics Inc.
 
 Software License Agreement:
 
-The software supplied herewith by Stanley Innovation Inc. (the "Company") 
-for its licensed Segway RMP Robotic Platforms is intended and supplied to you, 
-the Company's customer, for use solely and exclusively with Stanley Innovation 
-products. The software is owned by the Company and/or its supplier, and is 
-protected under applicable copyright laws.  All rights are reserved. Any use in 
-violation of the foregoing restrictions may subject the user to criminal 
-sanctions under applicable laws, as well as to civil liability for the 
-breach of the terms and conditions of this license. The Company may 
-immediately terminate this Agreement upon your use of the software with 
-any products that are not Stanley Innovation products.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
 
-The software was written using Python programming language.  Your use 
-of the software is therefore subject to the terms and conditions of the 
-OSI- approved open source license viewable at http://www.python.org/.  
-You are solely responsible for ensuring your compliance with the Python 
-open source license.
+1. Redistributions of source code must retain the above copyright notice, this
+list of conditions and the following disclaimer.
 
-You shall indemnify, defend and hold the Company harmless from any claims, 
-demands, liabilities or expenses, including reasonable attorneys fees, incurred 
-by the Company as a result of any claim or proceeding against the Company 
-arising out of or based upon: 
+2. Redistributions in binary form must reproduce the above copyright notice,
+this list of conditions and the following disclaimer in the documentation and/or
+other materials provided with the distribution.
 
-(i) The combination, operation or use of the software by you with any hardware, 
-    products, programs or data not supplied or approved in writing by the Company, 
-    if such claim or proceeding would have been avoided but for such combination, 
-    operation or use.
- 
-(ii) The modification of the software by or on behalf of you 
+3. Neither the name of the copyright holder nor the names of its contributors
+may be used to endorse or promote products derived from this software without
+specific prior written permission.
 
-(iii) Your use of the software.
-
- THIS SOFTWARE IS PROVIDED IN AN "AS IS" CONDITION. NO WARRANTIES,
- WHETHER EXPRESS, IMPLIED OR STATUTORY, INCLUDING, BUT NOT LIMITED
- TO, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- PARTICULAR PURPOSE APPLY TO THIS SOFTWARE. THE COMPANY SHALL NOT,
- IN ANY CIRCUMSTANCES, BE LIABLE FOR SPECIAL, INCIDENTAL OR
- CONSEQUENTIAL DAMAGES, FOR ANY REASON WHATSOEVER.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR
+ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON
+ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  
  \file   rmp_data_classes.py
 
@@ -54,7 +41,6 @@ from geometry_msgs.msg import TwistWithCovarianceStamped
 from sensor_msgs.msg import Imu, MagneticField,NavSatFix,NavSatStatus,JointState
 from geometry_msgs.msg import PoseWithCovarianceStamped
 from std_msgs.msg import Int32, Bool
-from kvh_msgs.msg import Kvh
 import rospy
 import tf
 import math
@@ -65,7 +51,7 @@ HAS_2_WHEELS = [2,3,5]
 header_stamp = 0
 platform_identifier = 0
 machine_id = 1
-has_external_imu = 0
+has_imu = 0
 has_brakes = 0
 has_segway_bsa = 0
 num_wheels = 2
@@ -100,7 +86,7 @@ class RMP_Status:
         global header_stamp
         global platform_identifier
         global machine_id
-        global has_external_imu
+        global has_imu
         global has_brakes
         global has_segway_bsa
         global num_wheels
@@ -109,8 +95,9 @@ class RMP_Status:
         
         if self.init:
             self.platform_identifier = data[12]
+             
             machine_id = self.platform_identifier & 0x1F
-            has_external_imu = (platform_identifier & 0x20) >> 5
+            has_imu = (self.platform_identifier & 0x00000020) >> 5
             has_brakes = (self.platform_identifier & 0x40) >> 6
             has_segway_bsa = (self.platform_identifier & 0x80) >> 7
             self.start_time_machine = rmp_timestamp
@@ -253,7 +240,7 @@ class RMP_AuxPower:
             self._MsgPub.publish(self._MsgData)
             self._seq += 1
         
-class AHRS_Packet(object):
+class IMU_Packet(object):
     def __init__(self):
         self.accel_mps2       = [0.0]*3
         self.gyro_rps         = [0.0]*3
@@ -267,13 +254,13 @@ class AHRS_Packet(object):
         
         self.publish_data = False
         self._MsgData = Imu()
-        self._MsgPub = rospy.Publisher('/segway/feedback/ext_imu', Imu, queue_size=10)
-        self._MsgData.header.frame_id = '/segway/ext_imu_frame'
+        self._MsgPub = rospy.Publisher('/segway/feedback/imu', Imu, queue_size=10)
+        self._MsgData.header.frame_id = 'imu_frame'
         self._seq = 0
         
         self._MagMsgData = MagneticField()
-        self._MagMsgPub = rospy.Publisher('/segway/feedback/ext_mag_feild', MagneticField, queue_size=10)
-        self._MagMsgData.header.frame_id = '/segway/ext_imu_frame'
+        self._MagMsgPub = rospy.Publisher('/segway/feedback/mag_feild', MagneticField, queue_size=10)
+        self._MagMsgData.header.frame_id = 'imu_frame'
         self._Magseq = 0
 
     def Shutdown(self):
@@ -295,21 +282,14 @@ class AHRS_Packet(object):
             self.rpy_rad[i] = convert_u32_to_float(data[index])
             index+=1
         
-        self.timestamp_sec = convert_float_to_u32(convert_u32_to_float(data[index]) * 62500)
-        
         self._MsgData.header.stamp = header_stamp
         self._MagMsgData.header.stamp = header_stamp
         self._MsgData.header.seq = self._seq
         self._MagMsgData.header.seq = self._seq      
         
-        roll = -self.rpy_rad[0] 
+        roll = self.rpy_rad[0] 
         pitch = self.rpy_rad[1]
         yaw = self.rpy_rad[2]
-        while (yaw <= -math.pi):
-            yaw += 2.0*math.pi;
-        while (yaw > math.pi):
-            yaw -= 2.0*math.pi;
-        yaw*=-1.0;
         
         q = tf.transformations.quaternion_from_euler(roll, pitch, yaw, 'sxyz')
         
@@ -322,140 +302,32 @@ class AHRS_Packet(object):
         self._MsgData.orientation_covariance[4] = self.orientation_covariance
         self._MsgData.orientation_covariance[8] = self.orientation_covariance
         
-        self._MsgData.linear_acceleration.x = -self.accel_mps2[0]
+        self._MsgData.linear_acceleration.x = self.accel_mps2[0]
         self._MsgData.linear_acceleration.y = self.accel_mps2[1]
-        self._MsgData.linear_acceleration.z = -self.accel_mps2[2]
+        self._MsgData.linear_acceleration.z = self.accel_mps2[2]
         self._MsgData.linear_acceleration_covariance[0] = self.linear_accel_covariance
         self._MsgData.linear_acceleration_covariance[4] = self.linear_accel_covariance
         self._MsgData.linear_acceleration_covariance[8] = self.linear_accel_covariance
         
-        self._MsgData.angular_velocity.x = -self.gyro_rps[0]
+        self._MsgData.angular_velocity.x = self.gyro_rps[0]
         self._MsgData.angular_velocity.y = self.gyro_rps[1]
-        self._MsgData.angular_velocity.z = -self.gyro_rps[2]
+        self._MsgData.angular_velocity.z = self.gyro_rps[2]
         self._MsgData.angular_velocity_covariance[0] = self.angular_velocity_covariance
         self._MsgData.angular_velocity_covariance[4] = self.angular_velocity_covariance
         self._MsgData.angular_velocity_covariance[8] = self.angular_velocity_covariance
         
-        self._MagMsgData.magnetic_field.x = -self.mag_T[0]
+        self._MagMsgData.magnetic_field.x = self.mag_T[0]
         self._MagMsgData.magnetic_field.y = self.mag_T[1]
-        self._MagMsgData.magnetic_field.z = -self.mag_T[2]
+        self._MagMsgData.magnetic_field.z = self.mag_T[2]
         self._MagMsgData.magnetic_field_covariance[0] = self.magnetic_field_covariance
         self._MagMsgData.magnetic_field_covariance[4] = self.magnetic_field_covariance
         self._MagMsgData.magnetic_field_covariance[8] = self.magnetic_field_covariance
         
                 
-        if not rospy.is_shutdown() and (True == self.publish_data):
+        if not rospy.is_shutdown():
             self._MsgPub.publish(self._MsgData)
             self._MagMsgPub.publish(self._MagMsgData)
             self._seq += 1
-
-
-class GPS_Packet(object):
-    def __init__(self):
-        self.latitude_deg     = 0.0
-        self.longitude_deg    = 0.0
-        self.msl_height_m     = 0.0
-        self.el_height_m      = 0.0
-        self.horizontal_stdev = 0.0
-        self.vertical_stdev   = 0.0
-        self.valid_llh_flag   = 0
-        
-        self.fix_valid_flags        = 0
-        self.fix_type               = 0
-        self.fix_num_space_vehicles = 0
-        
-        self.hw_sensor_state   = 0
-        self.hw_antenna_state  = 0
-        self.hw_antenna_power  = 0
-        self.hw_valid_hw_flags = 0
-        
-        self.publish_data = False
-        
-        self._HVMsgData = NavSatFix()
-        self._HVMsgPub = rospy.Publisher('/segway/feedback/gps/fix_3d', NavSatFix, queue_size=10)
-        self._HVMsgData.header.frame_id = '/segway/gps_frame'
-        self._HVMsgData.status.service = NavSatStatus.SERVICE_GPS
-        
-        self._HMsgData = NavSatFix()
-        self._HMsgPub = rospy.Publisher('/segway/feedback/gps/fix_2d', NavSatFix, queue_size=10)
-        self._HMsgData.header.frame_id = '/segway/gps_frame'
-        self._HMsgData.status.service = NavSatStatus.SERVICE_GPS
-        self._seq = 0
-        
-        self.LAT_LON_FIX_VALID          = 0x0001
-        self.ELLIPSOID_HEIGHT_FIX_VALID = 0x0002
-        self.MSL_HEIGHT_FIX_VALID       = 0x0004
-        self.HORIZONTAL_ACCURACY_VALID  = 0x0008
-        self.VERTICAL_ACCURACY_VALID    = 0x0010
-        
-    def Shutdown(self):
-        self._HVMsgPub.unregister()
-        self._HMsgPub.unregister()
-
-    def parse_data(self,data):
-        
-        self.latitude_deg     = convert_u64_to_double(data[0],data[1])
-        self.longitude_deg    = convert_u64_to_double(data[2],data[3])
-        self.el_height_m      = convert_u64_to_double(data[4],data[5])
-        self.msl_height_m     = convert_u64_to_double(data[6],data[7])
-        self.horizontal_stdev = convert_u32_to_float(data[8])
-        self.vertical_stdev   = convert_u32_to_float(data[9])
-        self.valid_llh_flag   = data[10]
-        
-        self.fix_valid_flags        = (data[11] & 0x0000FFFF) 
-        self.fix_type               = (data[11] & 0xFF000000) >> 24 
-        self.fix_num_space_vehicles = (data[11] & 0x00FF0000) >> 16
-        
-        self.hw_sensor_state   = (data[12] & 0xFF000000) >> 24
-        self.hw_antenna_state  = (data[12] & 0x00FF0000) >> 16
-        self.hw_antenna_power  = (data[12] & 0x0000FF00) >> 8
-        self.hw_valid_hw_flags = (data[12] & 0x000000FF)
-        
-        self._HVMsgData.header.stamp = header_stamp
-        self._HVMsgData.header.seq = self._seq
-        
-        self._HMsgData.header.stamp = header_stamp
-        self._HMsgData.header.seq = self._seq
-        
-        self._HVMsgData.latitude = self.latitude_deg
-        self._HVMsgData.longitude = self.longitude_deg
-        self._HVMsgData.altitude = self.el_height_m
-        
-        self._HMsgData.latitude = self.latitude_deg
-        self._HMsgData.longitude = self.longitude_deg
-        self._HMsgData.altitude = 0.0      
-        
-        if (self.LAT_LON_FIX_VALID == (self.LAT_LON_FIX_VALID & self.valid_llh_flag)):
-            self._HMsgData.status.status = NavSatStatus.STATUS_FIX
-            if (self.ELLIPSOID_HEIGHT_FIX_VALID == (self.ELLIPSOID_HEIGHT_FIX_VALID & self.valid_llh_flag)):
-                self._HVMsgData.status.status = NavSatStatus.STATUS_FIX
-            else:
-                self._HVMsgData.status.status = NavSatStatus.STATUS_NO_FIX
-        else:
-            self._HVMsgData.status.status = NavSatStatus.STATUS_NO_FIX
-            self._HMsgData.status.status = NavSatStatus.STATUS_NO_FIX             
-        
-        if (self.HORIZONTAL_ACCURACY_VALID == (self.HORIZONTAL_ACCURACY_VALID & self.valid_llh_flag)):
-            self._HMsgData.position_covariance_type = NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
-            self._HMsgData.position_covariance[0] = self.horizontal_stdev * self.horizontal_stdev
-            self._HMsgData.position_covariance[4] = self.horizontal_stdev * self.horizontal_stdev
-            self._HMsgData.position_covariance[8] = 100.0
-            
-            if (self.VERTICAL_ACCURACY_VALID == (self.VERTICAL_ACCURACY_VALID & self.valid_llh_flag)):
-                self._HVMsgData.position_covariance_type = NavSatFix.COVARIANCE_TYPE_DIAGONAL_KNOWN
-                self._HMsgData.position_covariance[0] = self.horizontal_stdev * self.horizontal_stdev
-                self._HMsgData.position_covariance[4] = self.horizontal_stdev * self.horizontal_stdev
-                self._HMsgData.position_covariance[8] = self.vertical_stdev * self.vertical_stdev
-            else:
-                self._HVMsgData.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
-        else:
-            self._HVMsgData.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
-            self._HMsgData.position_covariance_type = NavSatFix.COVARIANCE_TYPE_UNKNOWN
-            
-        if not rospy.is_shutdown() and (True == self.publish_data):
-            self._HMsgPub.publish(self._HMsgData)
-            self._HVMsgPub.publish(self._HVMsgData)    
-            self._seq+=1
 
 class BSA_Packet(object):
     def __init__(self):
@@ -468,10 +340,10 @@ class BSA_Packet(object):
         
         self.publish_data = False
         self._MsgData = Imu()
-        self._MsgPub = rospy.Publisher('/segway/feedback/segway_imu', Imu, queue_size=10)
+        self._MsgPub = rospy.Publisher('/segway/feedback/segway_bsa', Imu, queue_size=10)
         self._StatData = Int32()
-        self._StatPub = rospy.Publisher('/segway/feedback/segway_imu/stat', Int32, queue_size=10)
-        self._MsgData.header.frame_id = '/segway/bsa_imu_frame'
+        self._StatPub = rospy.Publisher('/segway/feedback/segway_bsa/stat', Int32, queue_size=10)
+        self._MsgData.header.frame_id = 'segway_bsa_frame'
         self._seq = 0
 
     def Shutdown(self):
@@ -521,7 +393,7 @@ class BSA_Packet(object):
         self._StatData = self.pse_data_valid 
         
                 
-        if not rospy.is_shutdown() and (1 == has_segway_bsa):
+        if not rospy.is_shutdown():
             self._StatPub.publish(self._StatData)
             self._MsgPub.publish(self._MsgData)
             self._seq += 1            
@@ -529,40 +401,25 @@ class BSA_Packet(object):
         
 class RMP_IMU(object):
     def __init__(self):
-        self.status = 0
-        self.errors = 0
+        self._init_packets = True
 
-        self._um7_sub = rospy.Subscriber('/imu/data',Imu,self.ExternalImuCallback)
-        self._um7_pub = rospy.Publisher('/segway/feedback/ext_imu', Imu, queue_size=10)
-        self._um7_data = Imu()
-        
     def Shutdown(self):
-        self._um7_sub.unregister()
-        self._um7_pub.unregister()
+        if (True == has_segway_bsa):
+            self.bsa.Shutdown()
+        if (True == has_imu):
+            self.imu.Shutdown()
     
-    def ExternalImuCallback(self, imu_data):
-        self._um7_data.header = imu_data.header
-        self._um7_data.orientation = imu_data.orientation
-        
-        self._um7_data.linear_acceleration = imu_data.linear_acceleration        
-        self._um7_data.angular_velocity = imu_data.angular_velocity
-             
-        if not rospy.is_shutdown():
-            self._um7_pub.publish(self._um7_data)
-        
     def parse_data(self,data):
-        if (True == has_segway_bsa): 
+        if (True == has_segway_bsa):
+            if (True == self._init_packets):
+                self.bsa = BSA_Packet() 
             self.bsa.parse_data(data[0:11])
-        if (True == has_external_imu):
-            self.ahrs.parse_data(data[11:24])
-            self.gps.parse_data(data[24:37]) 
-            self.status = data[38] & 0xFF
-            self.missed_ahrs_messages = (self.status & 0xFF000000) >> 24
-            self.missed_gps_messages = (self.status & 0x00FF0000) >> 16
-            
-            if  not rospy.is_shutdown() and (2 == self.status):
-                self.ahrs.publish_data = True
-                self.gps.publish_data = True
+        if (True == has_imu):
+            if (True == self._init_packets):
+                self.imu = IMU_Packet()
+            self.imu.parse_data(data[11:])
+                
+        self._init_packets = False
 
 class RMP_Dynamics:
     def __init__(self):
@@ -578,161 +435,45 @@ class RMP_Dynamics:
         else:
             names = ['left_front_wheel','right_front_wheel','left_rear_wheel','right_rear_wheel']
             
-
-        self.has_rear_caster = False
-        self.has_front_caster = False
-        try:
-            if "true"==os.environ["SEGWAY_HAS_REAR_CASTER"]:
-                self.has_rear_caster = True
-        except:
-            self.has_rear_caster = False
-        try:
-            if "true"==os.environ["SEGWAY_HAS_FRONT_CASTER"]:
-                self.has_front_caster = True
-        except:
-            self.has_front_caster = False     
-                
-        if (True == self.has_rear_caster):
-            names.append('rear_caster_swivel')
-            names.append('rear_caster_wheel')
-            
-        if (True == self.has_front_caster):
-            names.append('front_caster_swivel')
-            names.append('front_caster_wheel')
-            
         self._jointStateMsg.name = names
         
         self._MsgData.header.frame_id = ''
         self._jointStateMsg.header.frame_id = ''
   
-        self._OdomData1 = Odometry()
-        self._OdomData2 = Odometry()
-        self._OdomPub1 = rospy.Publisher('/segway/feedback/wheel_odometry', Odometry, queue_size=10)
-        self._OdomPub2 = rospy.Publisher('/segway/odometry/local_filtered', Odometry, queue_size=10)
-        self.has_recved_kvh = False
-        self._th = 0.0
-        self._th_wrapped = 0.0
-        self._s0 = rospy.Subscriber('/dsp3000', Kvh, self._update_heading)
+        self._OdomData = Odometry()
+        self._OdomPub = rospy.Publisher('/segway/odometry/local_filtered', Odometry, queue_size=10)
       
-        self._OdomData1.header.frame_id = 'odom'
-        self._OdomData1.child_frame_id  = 'base_link'
+        self._OdomData.header.frame_id = 'odom'
+        self._OdomData.child_frame_id  = 'base_link'
         
         
-        self._OdomData1.pose.covariance = [0.0017,0.0,0.0,0.0,0.0,0.0,
+        self._OdomData.pose.covariance = [0.0017,0.0,0.0,0.0,0.0,0.0,
                                           0.0,0.0017,0.0,0.0,0.0,0.0,
                                           0.0,0.0,0.0017,0.0,0.0,0.0,
                                           0.0,0.0,0.0,0.00000,0.0,0.0,
                                           0.0,0.0,0.0,0.0,0.00000,0.0,
                                           0.0,0.0,0.0,0.0,0.0,0.0017]
              
-        self._OdomData1.twist.covariance = [0.0017,0.0,0.0,0.0,0.0,0.0,
+        self._OdomData.twist.covariance = [0.0017,0.0,0.0,0.0,0.0,0.0,
                                            0.0,0.0017,0.0,0.0,0.0,0.0,
                                            0.0,0.0,0.0017,0.0,0.0,0.0,
                                            0.0,0.0,0.0,0.00000,0.0,0.0,
                                            0.0,0.0,0.0,0.0,0.00000,0.0,
                                            0.0,0.0,0.0,0.0,0.0,0.0017]
-                                           
-                                           
-        self._OdomData2.header.frame_id = self._OdomData1.header.frame_id
-        self._OdomData2.child_frame_id = self._OdomData1.child_frame_id
-        self._OdomData2.pose.covariance = self._OdomData1.pose.covariance
-        self._OdomData2.twist.covariance = self._OdomData1.twist.covariance
         
         self._seq = 0
-        self.last_time = rospy.get_time()
-        self.angular_offset = 0.0
-        self._th = 0.0
-        self._th_wrapped = 0.0
-        self._w_kvh = 0.0
-        self.x_kvh_pos = 0.0
-        self.y_kvh_pos = 0.0
-        self._s1 = rospy.Subscriber('/segway/reset_odometry', Bool, self._odometry_reset)
         
     def Shutdown(self):
-        self._s0.unregister()
-        self._s1.unregister()
         self._MsgPub.unregister() 
         self._jointStatePub.unregister()
-        self._OdomPub1.unregister()
-        self._OdomPub2.unregister()
-
-    def _odometry_reset(self, msg):
-        self.angular_offset=self._th    
-        self.x_kvh_pos = 0.0
-        self.y_kvh_pos = 0.0
-        
-    def _update_heading(self,msg):
-        if not self.has_recved_kvh:
-            self.angular_offset=self._th 
-            self._OdomData2.pose.pose.position.x = 0.0
-            self._OdomData2.pose.pose.position.y = 0.0        
-            self.has_recved_kvh = True
-        vx = self._OdomData1.twist.twist.linear.x
-        self._th = msg.yaw_angle_rad - self.angular_offset
-        self._th_wrapped = wrap_angle(self._th)
-        self._w_kvh = msg.yaw_rate_rps
-        
-    def _update_odom(self):
-    
-        self._OdomData2 = Odometry()
-        self._OdomData2.header.frame_id = self._OdomData1.header.frame_id
-        self._OdomData2.child_frame_id = self._OdomData1.child_frame_id
-        self._OdomData2.pose.covariance = self._OdomData1.pose.covariance
-        self._OdomData2.twist.covariance = self._OdomData1.twist.covariance
-        
-        if not self.has_recved_kvh:
-            rot = tf.transformations.quaternion_from_euler(0,0,self._MsgData.yaw_angle_rad)
-            pos = (self._OdomData1.pose.pose.position.x,self._OdomData1.pose.pose.position.y,0.0)
-            self._OdomData2 = self._OdomData1
-            
-        else:
-            dt = 0.01
-            rot = tf.transformations.quaternion_from_euler(0,0,self._th)
-            vx = self._OdomData1.twist.twist.linear.x
-            delta_x = vx * math.cos(self._th) * dt
-            delta_y = vx * math.sin(self._th) * dt
-            self.x_kvh_pos += delta_x
-            self.y_kvh_pos += delta_y
-            
-            self._OdomData2.header.stamp = header_stamp
-            self._OdomData2.header.seq = self._seq     
-            
-            self._OdomData2.twist.twist.linear.x = vx
-            self._OdomData2.twist.twist.linear.y = 0.0
-            self._OdomData2.twist.twist.linear.z = 0.0
-            self._OdomData2.twist.twist.angular.x = 0.0
-            self._OdomData2.twist.twist.angular.y = 0.0
-            self._OdomData2.twist.twist.angular.z = self._w_kvh 
-            self._OdomData2.pose.pose.orientation.x = rot[0]
-            self._OdomData2.pose.pose.orientation.y = rot[1]
-            self._OdomData2.pose.pose.orientation.z = rot[2]
-            self._OdomData2.pose.pose.orientation.w = rot[3]
-            self._OdomData2.pose.pose.position.x = self.x_kvh_pos;
-            self._OdomData2.pose.pose.position.y = self.y_kvh_pos;
-            self._OdomData2.pose.pose.position.z = 0.0        
-            pos = (self._OdomData2.pose.pose.position.x,self._OdomData2.pose.pose.position.y,0.0)        
-            
-
-        if not rospy.is_shutdown():
-            self._OdomPub2.publish(self._OdomData2) 
-            self._OdomPub1.publish(self._OdomData1)
-            self._MsgPub.publish(self._MsgData)
-            self._jointStatePub.publish(self._jointStateMsg)
-            
-            br = tf.TransformBroadcaster()
-            br.sendTransform(pos,
-                             rot,
-                             header_stamp,
-                             "base_link",
-                             "odom")
-            self._seq += 1         
+        self._OdomPub.unregister() 
 
     def parse(self,data):
         self._MsgData.header.stamp = header_stamp
         self._MsgData.header.seq = self._seq
         
-        self._OdomData1.header.stamp = header_stamp
-        self._OdomData1.header.seq = self._seq
+        self._OdomData.header.stamp = header_stamp
+        self._OdomData.header.seq = self._seq
         
         self._jointStateMsg.header.stamp = header_stamp
         self._jointStateMsg.header.seq = self._seq
@@ -758,40 +499,40 @@ class RMP_Dynamics:
         self._MsgData.x_accel_mps2 = convert_u32_to_float(data[13])
         self._MsgData.y_accel_mps2 = convert_u32_to_float(data[14])
         self._MsgData.yaw_accel_mps2 = convert_u32_to_float(data[15])
-        self._OdomData1.twist.twist.linear.x = convert_u32_to_float(data[16])
-        self._OdomData1.twist.twist.linear.y = convert_u32_to_float(data[17])
-        self._OdomData1.twist.twist.linear.z = 0.0
-        self._OdomData1.twist.twist.angular.x = 0.0
-        self._OdomData1.twist.twist.angular.y = 0.0
-        self._OdomData1.twist.twist.angular.z = convert_u32_to_float(data[18])
-        self._OdomData1.pose.pose.position.x = convert_u32_to_float(data[19])
-        self._OdomData1.pose.pose.position.y = convert_u32_to_float(data[20])
-        self._OdomData1.pose.pose.position.z = 0.0
+        self._OdomData.twist.twist.linear.x = convert_u32_to_float(data[16])
+        self._OdomData.twist.twist.linear.y = convert_u32_to_float(data[17])
+        self._OdomData.twist.twist.linear.z = 0.0
+        self._OdomData.twist.twist.angular.x = 0.0
+        self._OdomData.twist.twist.angular.y = 0.0
+        self._OdomData.twist.twist.angular.z = convert_u32_to_float(data[18])
+        self._OdomData.pose.pose.position.x = convert_u32_to_float(data[19])
+        self._OdomData.pose.pose.position.y = convert_u32_to_float(data[20])
+        self._OdomData.pose.pose.position.z = 0.0
         self._MsgData.yaw_angle_rad = convert_u32_to_float(data[21])
-        self._MsgData.odom_yaw_angle_rad = self._th_wrapped
+        
         rot = tf.transformations.quaternion_from_euler(0,0,self._MsgData.yaw_angle_rad)
-        self._OdomData1.pose.pose.orientation.x = rot[0]
-        self._OdomData1.pose.pose.orientation.y = rot[1]
-        self._OdomData1.pose.pose.orientation.z = rot[2]
-        self._OdomData1.pose.pose.orientation.w = rot[3]
-
-        """
-        Just use zeros for the joints
-        """
-        if (True == self.has_rear_caster):
-            for i in range(2):
-                joint_vel.append(0.0)
-                joint_pos.append(0.0)
-        if (True == self.has_front_caster):
-            for i in range(2):
-                joint_vel.append(0.0)
-                joint_pos.append(0.0)            
+        pos = (self._OdomData.pose.pose.position.x,self._OdomData.pose.pose.position.y,0.0)
+        
+        self._OdomData.pose.pose.orientation.x = rot[0]
+        self._OdomData.pose.pose.orientation.y = rot[1]
+        self._OdomData.pose.pose.orientation.z = rot[2]
+        self._OdomData.pose.pose.orientation.w = rot[3]      
 
         self._jointStateMsg.velocity = joint_vel
         self._jointStateMsg.position = joint_pos
 
         if not rospy.is_shutdown():
-            self._update_odom()
+            self._OdomPub.publish(self._OdomData) 
+            self._MsgPub.publish(self._MsgData)
+            self._jointStatePub.publish(self._jointStateMsg)
+            
+            br = tf.TransformBroadcaster()
+            br.sendTransform(pos,
+                             rot,
+                             header_stamp,
+                             "base_link",
+                             "odom")
+            self._seq += 1
 
 
 class RMP_Configuration:
@@ -815,7 +556,7 @@ class RMP_Configuration:
         global wheel_circum
         self._MsgData.header.stamp = header_stamp
         self._MsgData.header.seq = self._seq
-
+        
         self.configuration_feedback = data
         self._MsgData.vel_limit_mps = convert_u32_to_float(data[0])
         self._MsgData.accel_limit_mps2 = convert_u32_to_float(data[1])
@@ -827,14 +568,16 @@ class RMP_Configuration:
         self._MsgData.tire_diameter_m = convert_u32_to_float(data[7])
         wheel_circum = self._MsgData.tire_diameter_m * math.pi
         self._MsgData.wheelbase_length_m = convert_u32_to_float(data[8])
-        self._MsgData.wheel_track_width_m = convert_u32_to_float(data[9])
-        self._MsgData.gear_ratio = convert_u32_to_float(data[10])
-        self._MsgData.config_bitmap = data[11]
-        self._MsgData.eth_ip_address = numToDottedQuad(data[12])
-        self._MsgData.eth_port_number = data[13]
-        self._MsgData.eth_subnet_mask = numToDottedQuad(data[14])
-        self._MsgData.eth_gateway = numToDottedQuad(data[15])
-
+        self._MsgData.omni_yaw_correction_factor = convert_u32_to_float(data[9])
+        self._MsgData.omni_straffe_correction_factor = convert_u32_to_float(data[10])
+        self._MsgData.wheel_track_width_m = convert_u32_to_float(data[11])
+        self._MsgData.gear_ratio = convert_u32_to_float(data[12])
+        self._MsgData.config_bitmap = data[13]
+        self._MsgData.eth_ip_address = numToDottedQuad(data[14])
+        self._MsgData.eth_port_number = data[15]
+        self._MsgData.eth_subnet_mask = numToDottedQuad(data[16])
+        self._MsgData.eth_gateway = numToDottedQuad(data[17])
+        
         if not rospy.is_shutdown():
             self._MsgPub.publish(self._MsgData)
             self._seq += 1
