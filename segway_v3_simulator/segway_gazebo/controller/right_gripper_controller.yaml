@@ -1,0 +1,6 @@
+right_gripper_controller:
+    type: effort_controllers/GripperActionController
+    joint: right_gripper_finger1_joint
+    action_monitor_rate: 100
+    gains:
+        right_gripper_finger1_joint: {p: 100.0,  i: 0.1, d: 0.05, i_clamp: 1.0} 

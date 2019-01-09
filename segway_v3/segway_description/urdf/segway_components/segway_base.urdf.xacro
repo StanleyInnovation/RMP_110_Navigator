@@ -1,0 +1,130 @@
+<?xml version="1.0"?>
+<!--
+Software License Agreement (BSD)
+\file      omni_structure.urdf.xacro
+\authors   Patrick Hussey
+\copyright Copyright (c) 2017, Kinova Robotics inc. All rights reserved.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright notice,
+      this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright notice,
+      this list of conditions and the following disclaimer in the documentation
+      and/or other materials provided with the distribution.
+    * Neither the name of the copyright holder nor the names of its contributors
+      may be used to endorse or promote products derived from this software
+      without specific prior written permission.
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS 
+"AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT 
+LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR 
+A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR 
+CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, 
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, 
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR 
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS 
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-->
+<robot name="segway_base" xmlns:xacro="http://ros.org/wiki/xacro">
+    <xacro:include filename="$(find segway_description)/urdf/segway_components/i2_wheel.urdf.xacro" />
+    
+    <!-- Wheel Mounting Positions -->
+    <xacro:property name="track" value="0.542391" />
+    <xacro:property name="wheel_vertical_offset" value="0.08255015" />
+
+    <!-- Wheel Properties -->
+    <xacro:property name="wheel_length" value="0.09224900" />
+    <xacro:property name="wheel_radius" value="0.2405681" />
+    
+    <xacro:macro name="box_inertia" params="m x y z">
+        <inertia  ixx="${m*(y*y+z*z)/12}" ixy = "0" ixz = "0"
+        iyy="${m*(x*x+z*z)/12}" iyz = "0"
+        izz="${m*(x*x+z*z)/12}" /> 
+    </xacro:macro>
+
+	<xacro:macro name="segway_base">
+        
+        <link name="base_chassis_link">
+			<inertial>
+				<mass value="101.0333036" />
+				<origin xyz="0 0 0.202000" />
+				<xacro:box_inertia m="101.0333036" x="0.69" y="0.69" z="0.404"/>
+		    </inertial>
+            <collision>
+				<geometry>
+					<mesh filename="package://segway_description/meshes/collision/collision_model.stl" />
+				</geometry>
+			</collision>
+			<visual>
+				<origin xyz="0 0 0" rpy="0 0 0" />
+				<geometry>
+					<mesh filename="package://segway_description/meshes/visual/base_chassis.dae" />
+				</geometry>
+			</visual>
+		</link>
+
+        <joint name="base_chassis_joint" type="fixed">
+            <origin xyz="0 0 0.158018" rpy="0 0 0" />
+            <parent link="base_link" />
+            <child link="base_chassis_link" />
+        </joint>
+
+        <!-- Front caster -->
+        <link name="front_caster_wheel_link">
+			<collision>
+			    <origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+				    <sphere radius="0.083567"/>
+				</geometry>
+			</collision>
+		</link>
+
+        <joint name="front_caster_wheel_joint" type="fixed">
+            <origin xyz="0.370050 0 -0.074451" rpy="0 0 0" />
+            <parent link="base_chassis_link" />
+            <child link="front_caster_wheel_link" />
+        </joint>
+        
+		<gazebo reference="front_caster_wheel_link">
+            <kp>1000000.0</kp>
+            <kd>10.0</kd>
+            <mu1>0</mu1>
+            <mu2>0</mu2>
+            <minDepth>0.003</minDepth>
+        </gazebo>
+        
+        <!-- Rear caster -->
+        <link name="rear_caster_wheel_link">
+			<collision>
+			    <origin xyz="0 0 0" rpy="0 0 0"/>
+				<geometry>
+				    <sphere radius="0.083567"/>
+				</geometry>
+			</collision>
+		</link>
+
+        <joint name="rear_caster_wheel_joint" type="fixed">
+            <origin xyz="-0.370050 0 -0.074451" rpy="0 0 0" />
+            <parent link="base_chassis_link" />
+            <child link="rear_caster_wheel_link" />
+        </joint>
+        
+		<gazebo reference="rear_caster_wheel_link">
+            <kp>1000000.0</kp>
+            <kd>10.0</kd>
+            <mu1>0</mu1>
+            <mu2>0</mu2>
+            <minDepth>0.003</minDepth>
+        </gazebo>
+        
+        <!-- Segway wheel macros -->
+        <xacro:i2_wheel wheel_prefix="left" parent="base_chassis_link" visual_rotation="0.0">
+            <origin xyz="0 ${track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+        </xacro:i2_wheel>
+        <xacro:i2_wheel wheel_prefix="right" parent="base_chassis_link" visual_rotation="${M_PI}">
+            <origin xyz="0 ${-track/2} ${wheel_vertical_offset}" rpy="0 0 0" />
+        </xacro:i2_wheel>
+    
+    </xacro:macro>
+</robot>

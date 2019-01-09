@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="limited" default="false"/>
+    <arg name="paused" default="false"/>
+    <arg name="gui" default="true"/>
+    <arg name="world" default="worlds/empty.world"/>
+    <arg name="x"   default="0.0"/>
+    <arg name="y"   default="0.0"/>
+    <arg name="z"   default="0.0"/>
+    
+    <param name="use_sim_time" value="true" />
+    
+    <!--node name="sim_start_patch" pkg="segway_gazebo" type="sim_start_patch" /-->
+
+	<!-- send robot urdf to param server -->
+	<param name="robot_description" command="$(find xacro)/xacro --inorder '$(find segway_description)/urdf/rmp.urdf.xacro'" />
+	
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+        <param name="publish_frequency" type="double" value="100.0" />
+        <param name="tf_prefix" value=""/>
+    </node>
+
+    <!-- startup simulated world -->
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(arg world)"/>
+        <arg name="paused" value="$(arg paused)"/>
+        <arg name="gui" value="$(arg gui)"/>
+    </include>
+
+    <!-- push robot_description to factory and spawn robot in gazebo -->
+    <node name="spawn_gazebo_model" pkg="gazebo_ros" type="spawn_model" args="-urdf -param robot_description -model rmp -x $(arg x) -y $(arg y) -z $(arg z)" respawn="false" output="screen" />
+    
+    
+    <!-- Controller spawners need to wait for the block laser plugins to load -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="5 segway_gazebo spawn_controllers.launch"
+        name="controller_spawners" output="screen"/>
+    
+    <node name="cmd_relay" pkg="topic_tools" type="relay" args="/segway/cmd_vel /diff_vel_controller/cmd_vel "/>
+    <node pkg="segway_gazebo" name="sim_odometry" type="sim_odometry" output="screen"/>
+    
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="segway_laser_filter" clear_params="true" respawn="true">
+        <remap from="scan" to="/segway/front_scan" />
+        <remap from="scan_filtered" to="/segway/filtered_scan" />
+        <param name="target_frame" value="base_link" />
+        <param name="high_fidelity" value="true" />
+        <rosparam command="load" 
+            file="$(find segway_bringup)/launch/sensors/config/2d_scan_filter.yaml" />
+    </node>
+
+</launch>

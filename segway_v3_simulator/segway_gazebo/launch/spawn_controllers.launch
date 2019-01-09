@@ -1,0 +1,8 @@
+<launch>
+    <rosparam file="$(find segway_gazebo)/controller/base_controller.yaml" command="load"/>
+    <rosparam file="$(find segway_gazebo)/controller/joint_state_controller.yaml" command="load"/>
+
+    <node name="base_controller_spawner" pkg="controller_manager" 
+          type="spawner" args="joint_state_controller
+                               diff_vel_controller" output="screen"/>
+</launch>

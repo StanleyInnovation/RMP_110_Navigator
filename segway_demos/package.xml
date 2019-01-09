@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<package>
+    <name>segway_demos</name>
+    <version>1.0.0</version>
+    <description>Demos for segway_v3</description>
+    <maintainer email="dev@stanleyinnovation.com">Patrick Hussey</maintainer>
+    <author></author>
+    <url type="repository">https://github.com/StanleyInnovation</url>
+    <license>BSD</license>
+    
+    <buildtool_depend>catkin</buildtool_depend>
+    
+    <build_depend>roslaunch</build_depend>
+
+    <export>
+    </export>
+</package>

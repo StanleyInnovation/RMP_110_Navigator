@@ -1,0 +1,112 @@
+#!/bin/bash
+
+echo -e "This script assumes that you have ubuntu 16.04.3LTS installed and nothing else.\n\n It is OK to have already installed ROS this will add any missing components.\n\n Please understand that this script modifies the environment and sets everything up to connect to a segway_v3 robot\n"
+
+read -r -p "Are you absolutely sure you want to continue? [y/N] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+    echo "Starting setup......"
+    sleep 1
+else
+    exit 1
+fi
+
+export SIBOT_SETUP_DIR=$PWD
+
+echo -e "\nNeed sudo persmission to do the configuration and setup\nPlease enter your password if prompted....\n"
+echo "$USER ALL=(ALL) NOPASSWD:ALL" | (sudo su -c 'EDITOR="tee -a" visudo') >> /dev/null
+
+sudo sed -i 's/GRUB_CMDLINE_LINUX=""/GRUB_CMDLINE_LINUX="net.ifnames=0 biosdevname=0"/g' /etc/default/grub
+sudo update-grub
+
+sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+sudo apt-key adv --keyserver hkp://ha.pool.sks-keyservers.net --recv-key 421C365BD9FF1F717815A3895523BAEEB01FA116
+sudo apt-get update
+sudo apt-get install ros-kinetic-desktop-full
+sudo rosdep init
+rosdep update
+source /opt/ros/kinectic/setup.bash
+sudo apt-get install python-rosinstall
+sudo apt-get update && sudo apt-get upgrade
+sudo apt-get install xdotool wmctrl iperf chrony htop bridge-utils ros-kinetic-navigation ros-kinetic-gmapping ros-kinetic-robot-localization ros-kinetic-yocs-cmd-vel-mux ros-kinetic-joy ros-kinetic-urg-node ros-kinetic-sick-tim ros-kinetic-cmake-modules daemontools openssh-server libpcap0.8-dev ros-kinetic-um7 ros-kinetic-imu-tools ros-kinetic-jsk-recognition ros-kinetic-ros-controllers ros-kinetic-scan-tools ros-kinetic-gazebo-ros ros-kinetic-gazebo-plugins ros-kinetic-moveit ros-kinetic-gazebo-ros-control ros-kinetic-hector-gazebo-plugins ros-kinetic-trac-ik ros-kinetic-tf2-sensor-msgs ros-kinetic-nmea-msgs ros-kinetic-pointcloud-to-laserscan
+
+if grep -q "sibot1" /etc/hosts
+then
+    echo "sibot1 is already defined in /etc/hosts"
+else
+    sudo sed -i "/127.0.1.1/a 10.66.171.4 sibot1" /etc/hosts 
+fi
+if grep -q "NAVIGATOR REMOTE PC START" ~/.bashrc
+then
+    echo ".bashrc is already updated for navigator remote"
+else
+    cat config/bash_rc_partial >> ~/.bashrc
+fi
+
+read -r -p "Setup the connection for the robot now? [y/N] " response
+if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+then
+
+    echo -e "\nPlease connect to the robot wireless (password is Welcome00)\n\nPress any key to continue....\n"
+    read -n 1 -s
+    if [ ! -f ~/.ssh/id_rsa.pub ]; then
+        echo "Generating a new ssh key for the user..."
+        read -r -p "Do you want to proceed? " response
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+        then
+            echo "Please press enter for each step,this will configure a default ssh key"
+            echo "If you decide to do something different than that its assumed you know what you're doing"
+            echo "Press any key to continue......"
+            read -n 1 -s    
+            ssh-keygen -t rsa
+        else
+            exit 1
+        fi
+    fi
+
+    echo 'Connecting to sibot1 (password is Welcome00)......Press any key to continue'
+    read -n 1 -s
+    ssh -oHostKeyAlgorithms='ssh-rsa' sibot@sibot1 "sleep 1; exit"
+    echo -e "Copying ssh key to sibot1 (password is Welcome00)\n\nPress any key to continue...."
+    read -n 1 -s
+    ssh-copy-id sibot@sibot1
+    echo 'Backing up workspace on sibot1......'
+    sleep 2
+    ssh sibot@sibot1 "tar -zcvf sibot1_original_src.tar.gz -C /home/sibot/segway_ws/src ."
+    mkdir -p  ~/sibot_backups
+    scp sibot@sibot1:/home/sibot/sibot1_original_src.tar.gz ~/sibot_backups/
+    rm -rf ~/segway_ws
+    mkdir -p ~/segway_ws
+    read -r -p "Get code from JR2 (if no then then retrieve from github)? [y/N] " response
+    if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
+    then
+        mkdir -p ~/segway_ws/src
+        tar xvzf ~/sibot_backups/sibot1_original_src.tar.gz -C ~/segway_ws/src/
+        tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
+    else
+        git clone https://github.com/StanleyInnovation/stanford_jr2 src/
+        tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
+    fi
+else
+    rm -rf ~/segway_ws
+    mkdir -p ~/segway_ws
+    git clone https://github.com/StanleyInnovation/stanford_jr2 src/
+    tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
+fi
+
+cd ~/indigosdk-2.0.20
+mkdir build && cd build
+rm -f CMakeCache.txt && cmake -DOpenCV_DIR=/opt/ros/kinetic/share/OpenCV-3.3.1 -DUSE_OPENCV=1 ..
+cmake --build . --config Release
+cd ~/segway_ws/src
+catkin_init_workspace
+cd ..
+catkin_make
+
+cd
+source ~/.bashrc
+echo -e "\nScript has finished configuring the remote PC\n\nPlease reboot your PC now\n\nPress any key to continue....\n"
+read -n 1 -s
+exit 1
+
+

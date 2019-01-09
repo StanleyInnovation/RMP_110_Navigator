@@ -1,0 +1,105 @@
+# NAVIGATOR REMOTE PC START
+
+source /opt/ros/kinetic/setup.bash
+source /home/$USER/segway_ws/devel/setup.bash
+
+function sibot1_cmd()
+{
+  if [ -z "$1" ]
+  then
+    echo "Need to specify command"
+  else
+    ssh -t sibot@sibot1 "bash -ic +m 'cd ~; ./env.sh; $1'"
+  fi
+}
+
+function save_map()
+{
+  if [ ! -z "$1" ]
+  then
+    local dest='/home/$USER/segway_ws/src/segway_demos/maps/'$1
+  else
+    local dest='/home/$USER/segway_ws/src/segway_demos/maps/mymap'
+  fi
+  
+  rosrun map_server map_saver -f $dest 
+  local old_line='/home/$USER/segway_ws/src/segway_demos/maps/'
+  local new_line=''    
+  sed -i "s%$old_line%$new_line%g" "$dest.yaml"
+ 
+  rsync -avzh --delete --exclude '*~' --progress /home/$USER/segway_ws/src/segway_demos/maps sibot@sibot1:/home/sibot/segway_ws/src/segway_demos/
+  
+  echo "Map saved locally and on the robot!!!!"
+
+}
+
+function sync_robot()
+{
+  echo "CLEANING UP THE LOCAL WORKSPACE.........."
+  sleep 1
+  find ~/segway_ws/ -name '*~' | xargs rm
+
+  echo "STOPPING THE ROBOT SERVICE AND UNINSTALLING IT.........."
+  sleep 1
+  sibot1_cmd "segstop; rosrun segway_bringup uninstall_segway_core"
+
+  echo "SYNCING WORKSPACE ON segway1 WITH LOCAL WORKSPACE.........."
+  sleep 1
+  rsync -avzhe ssh --exclude "*~" --progress sibot@sibot1:/home/sibot/segway_ws/src/segway_demos/maps /home/$USER/segway_ws/src/segway_demos/
+  rsync -avzhe ssh --delete --exclude '*~' --exclude 'CMakeLists.txt' --progress /home/$USER/segway_ws/src sibot@sibot1:/home/sibot/segway_ws/
+
+  if [ "$1" == "-nc" ]
+  then
+    echo "USER SKIPPED RECOMPILE ON ROBOT!!!!!!!!!!!!"
+    sleep 1
+  else
+    echo "RE-BUILDING WORKSPACE ON sibot1"
+    sleep 1
+    sibot1_cmd "cd ~/segway_ws; rm -rf build/ devel/; catkin_make"
+  fi
+
+  echo "INSTALLING THE ROBOT SERVICE AND STARTING IT.........."
+  sleep 1
+  sibot1_cmd "rosrun segway_bringup install_segway_core; sudo systemctl daemon-reload && sudo systemctl start segway-core"
+
+  echo "ROBOT IS ALL UPDATED..........EXITING"
+  sleep 1
+}
+
+alias sws='source ./devel/setup.bash'
+alias clean_backups='find ./ -name '*~' | xargs rm'
+alias clean_pyc='find ./ -name '*.pyc' | xargs rm'
+alias clean_rosbuild='rm -rf build devel install'
+alias s1='ssh -X sibot@sibot1'
+alias segstop='sibot1_cmd "segstop"'
+alias segstart='sibot1_cmd "segstart"'
+alias segchk='sibot1_cmd "segchk"'
+
+alias kill_robot_pcs='sibot1_cmd "sudo shutdown -h now"'
+alias fix_gvfs="sudo umount ~/.gvfs && sudo rm -rf ~/.gvfs"
+alias killgazebo="killall -9 gazebo & killall -9 gzserver  & killall -9 gzclient"
+alias killros="killall -9 roscore & killall -9 rosmaster"
+alias fix_stl='grep -rl 'solid' ./ | xargs sed -i 's/solid/robot/g''
+alias fix_perm='find . -name 'bin' -type d -exec chmod a+x -R {} \; && find . -name 'scripts' -type d -exec chmod a+x -R {} \; && find . -name 'cfg' -type d -exec chmod a+x -R {} \; && find . -name 'nodes' -type d -exec chmod a+x -R {} \;'
+
+alias sim_teleop='roslaunch segway_demos sim_teleop.launch'
+alias sim_mapping='roslaunch segway_demos sim_mapping.launch'
+alias sim_sensor_nav='roslaunch segway_demos sim_sensor_nav.launch'
+alias sim_map_nav='roslaunch segway_demos sim_map_nav.launch'
+alias sim_assisted_teleop='roslaunch segway_demos sim_assisted_teleop.launch'
+
+alias robot_teleop='roslaunch segway_demos robot_teleop.launch'
+alias robot_mapping='roslaunch segway_demos robot_mapping.launch'
+alias robot_sensor_nav='roslaunch segway_demos robot_sensor_nav.launch'
+alias robot_assisted_teleop='roslaunch segway_demos robot_assisted_teleop.launch'
+
+function robot_map_nav()
+{
+  if [ -z "$1" ]
+  then
+    echo "Need to specify mapfile argument"
+  else
+    roslaunch segway_demos robot_map_nav.launch map_file:=$1
+  fi
+}
+

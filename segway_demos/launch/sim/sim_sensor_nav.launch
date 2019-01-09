@@ -1,0 +1,30 @@
+<launch>
+
+    <arg name="js_type" default="$(optenv SEGWAY_JOY_TYPE ds4)"/>
+    
+    <!-- DS4 Driver -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="1 ds4drv ds4drv.launch"
+        name="ds4drv_bringup" output="screen" if="$(eval js_type == 'ds4')"/>
+         	
+    <!-- Bring up the platform in sim with all models, controllers, sensors estimates -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="1 segway_gazebo segway_test_zone.launch"
+        name="sim_bringup" output="screen"/>
+        
+    <!-- Bring up the joystick for control -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="6 segway_demos sim_basic_teleop.xml"
+        name="teleop_bringup" output="screen"/>
+
+    <!-- Bring up mapping -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="10 segway_demos sensor_nav.launch sim:=true"
+        name="mapping_bringup" output="screen"/> 
+    
+    <!-- Bring up rviz -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="15 segway_viz view_robot.launch function:=mapless_nav"
+        name="viz_bringup" output="screen"/>
+
+</launch>

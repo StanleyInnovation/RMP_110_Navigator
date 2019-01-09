@@ -1,0 +1,67 @@
+<!-- -*- mode: XML -*- -->
+<!-- launches all the nodes for all the sensors in the system-->
+
+<launch>
+    
+    <node pkg="sick_tim" type="sick_tim551_2050001" name="front_laser_node" clear_params="true" respawn="true">
+        <remap from="scan" to="/segway/front_scan" />
+        <param name="max_ang" value="1.7"/>
+        <param name="min_ang" value="-1.7"/>
+        <param name="frame_id" type="str" value="front_laser_link" />
+        <param name="time_offset" type="double" value="-0.03" />
+        <param name="range_min" type="double" value="0.05" />
+        <param name="range_max" type="double" value="25.0" />
+        <param name="hostname" type="string" value="10.66.171.8" />
+        <param name="port" type="string" value="2112" />
+    </node>
+
+	<node pkg="si_utils" type="laserscan_to_pcl2" name="front_scan_to_pcl2">
+	    <remap from="scan" to="/segway/front_scan"/>
+	    <remap from="points2" to="/segway/front_scan_points2"/>
+	</node>
+	
+	<node name="front_scan_statistical_outlier_removal" pkg="nodelet" type="nodelet"
+        args="standalone pcl/StatisticalOutlierRemoval">
+		<remap from="~input" to="/segway/front_scan_points2" />
+		<remap from="~output" to="/segway/filtered_front_scan_points2" />
+		<rosparam>mean_k: 4</rosparam>
+		<rosparam>stddev: 0.5</rosparam>
+	</node>
+	
+    <node pkg="pointcloud_to_laserscan" type="pointcloud_to_laserscan_node" name="front_pointcloud_to_laserscan">
+        <remap from="cloud_in" to="/segway/filtered_front_scan_points2"/>
+        <remap from="scan" to="/segway/filtered_front_scan"/>
+        <rosparam>
+            target_frame: base_link # Leave disabled to output scan in pointcloud frame
+            transform_tolerance: 0.01
+            min_height: 0.0
+            max_height: 2.0
+
+            angle_min: -3.14
+            angle_max: 3.14
+            angle_increment: 0.005759587
+            scan_time: 0.066666667
+            range_min: 0.05
+            range_max: 25.0
+            use_inf: true
+            inf_epsilon: 1.0
+
+            # Concurrency level, affects number of pointclouds queued for processing and number of threads used
+            # 0 : Detect number of cores
+            # 1 : Single threaded
+            # 2->inf : Parallelism level
+            concurrency_level: 1
+        </rosparam>
+    </node>
+    
+    <node pkg="laser_filters" type="scan_to_scan_filter_chain" name="segway_laser_filter" clear_params="true" respawn="true">
+        <remap from="scan" to="/segway/filtered_front_scan" />
+        <remap from="scan_filtered" to="/segway/filtered_scan" />
+        <param name="target_frame" value="base_link" />
+        <param name="high_fidelity" value="true" />
+        <rosparam command="load" 
+            file="$(find segway_bringup)/launch/sensors/config/2d_scan_filter.yaml" />
+    </node>
+    
+    
+</launch>

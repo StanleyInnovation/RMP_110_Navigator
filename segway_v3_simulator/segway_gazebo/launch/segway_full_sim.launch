@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+    <env name="GAZEBO_MODEL_PATH" value="$(find segway_gazebo)/models:$(optenv GAZEBO_MODEL_PATH)" />
+    <param name="use_sim_time" value="true" />
+
+    <include file="$(find segway_gazebo)/launch/segway.launch">
+        <arg name="world" value="$(find segway_gazebo)/worlds/test_zone.sdf"/>
+    </include>
+    
+    <!-- Start moveit-->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="10 segway_moveit_config rmp_moveit_planning_execution.launch sim:=true"
+        name="segway_moveit" output="screen"/>
+         
+    <!-- Initialize sim by moving to tucked-->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="15 segway_gazebo init_sim.launch"
+        name="segway_init_sim" output="screen"/>
+        
+</launch>

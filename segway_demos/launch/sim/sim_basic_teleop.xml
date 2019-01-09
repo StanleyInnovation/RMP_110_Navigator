@@ -1,0 +1,35 @@
+    
+<launch>
+    <arg name="sim_teleop_vel_limit_mps" default="0.5"/>
+    <arg name="sim_teleop_yaw_rate_limit_rps" default="0.5"/>
+    <arg name="sim_teleop_accel_lim" default="0.5"/>
+    <arg name="sim_teleop_yaw_accel_lim" default="0.5"/>
+    <arg name="use_joy" default="true"/>
+
+    <node pkg="joy" type="joy_node" name="joy_node" if="$(arg use_joy)">
+        <param name="dev" type="string" value="$(optenv SEGWAY_JOY_DEV /dev/input/js0)" />
+        <param name="deadzone" type="double" value="$(optenv SEGWAY_JOY_DEADZONE 0.1)" />
+        <param name="autorepeat_rate" type="double" value="50" />
+    </node>
+    
+    <node pkg="segway_ros" ns="segway" type="segway_teleop" name="segway_teleop" output="screen">
+        <param name="js_type" value="$(optenv SEGWAY_JOY_TYPE ds4)"/>
+        <param name="sim" value="true"/>
+        <param name="sim_teleop_vel_limit_mps" value="$(arg sim_teleop_vel_limit_mps)"/>
+        <param name="sim_teleop_yaw_rate_limit_rps" value="$(arg sim_teleop_yaw_rate_limit_rps)"/>
+        <param name="sim_teleop_accel_lim" value="$(arg sim_teleop_accel_lim)"/>
+        <param name="sim_teleop_yaw_accel_lim" value="$(arg sim_teleop_yaw_accel_lim)"/>
+    </node>
+    
+    <node pkg="segway_ros" ns="segway" type="segway_marker_ctrl" name="segway_marker_ctrl" output="screen">
+        <param name="sim" value="true"/>
+        <param name="robot_name" value="RMP_110"/>
+    </node>
+    
+    <group ns="segway">
+        <node pkg="nodelet" type="nodelet" name="nodelet_manager" args="manager"/>
+        <node pkg="nodelet" type="nodelet" name="cmd_vel_mux" args="load yocs_cmd_vel_mux/CmdVelMuxNodelet nodelet_manager">
+            <param name="yaml_cfg_file" value="$(find segway_bringup)/launch/teleop/config/cmd_vel_mux.yaml"/>
+        </node>
+    </group>
+</launch>

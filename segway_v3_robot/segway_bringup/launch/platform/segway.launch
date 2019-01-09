@@ -1,0 +1,32 @@
+<!-- Launch file for Segway platform startup -->
+
+<launch>
+
+	<!-- Segway System Watchdog is necessary for onboard PC -->
+	<node pkg="segway_ros" type="segway_wd" name="segway_wd" respawn="true" if="$(optenv SEGWAY_POWERS_PC_ONBOARD false)"/>
+	        
+    <!-- Segway Base platform ROS Driver -->
+    <node pkg="segway_ros" ns="segway" type="segway_driver" name="segway_driver" respawn="true" output="screen">
+        <param name="platform" value="RMP_110" />
+    </node>
+
+    <!-- Platform specific robot state publisher and parameters -->
+    <include file="$(find segway_description)/launch/upload_rmp.launch"/>
+    
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" >
+        <param name="publish_frequency" value="100" />
+    </node>
+  
+    <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher">
+        <rosparam param="source_list">[segway/rmp_joint_states,
+                                       segway/head/joint_states,
+                                       segway/right_arm/joint_states,
+                                       segway/right_gripper/joint_states]</rosparam>
+    </node>
+    
+    <!-- Platform specific configuration -->
+    <node name="dynamic_reconfigure_load" pkg="dynamic_reconfigure" type="dynparam"
+        args="load /segway/segway_driver $(find segway_bringup)/launch/platform/config/segway_params.yaml" />
+    
+</launch>

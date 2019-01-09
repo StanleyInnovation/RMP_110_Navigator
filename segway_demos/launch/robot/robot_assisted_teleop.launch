@@ -1,0 +1,23 @@
+ <launch>
+        
+    <!-- Tuck the robot -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="1 segway_demos tuck_robot.launch local:=false"
+        name="tuck_robot" output="screen"/>
+
+    <!-- Bring up the joystick for control -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="1 segway_remote_teleop segway_remote_teleop.launch"
+        name="joy_bringup" output="screen" unless="$(optenv SEGWAY_HAS_ONBOARD_JOY false)"/>
+        
+    <!-- Bring up assisted teleop -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="10 segway_demos assisted_teleop.launch local:=false"
+        name="mapping_bringup" output="screen"/> 
+    
+    <!-- Bring up rviz -->
+    <node pkg="si_utils" type="timed_roslaunch"
+        args="15 segway_viz view_robot.launch function:=assisted_teleop"
+        name="viz_bringup" output="screen"/>
+
+</launch>
