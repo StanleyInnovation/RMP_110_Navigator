@@ -111,11 +111,8 @@ fi
 
 ping_peripheral 10.66.171.5 SEGWAY_RMP
 ping_peripheral 10.66.171.8 FRONT_LASER
-ping_peripheral 10.66.171.9 REAR_LASER
-ping_peripheral 10.66.171.10 VLP16
-#ping_peripheral 10.66.171.15 RIGHT_ARM
 
-sleep 15
+sleep 5
 
 # Punch it.
 setuidgid @(user) roslaunch $LAUNCH_FILENAME @(roslaunch_wait?'--wait ')&

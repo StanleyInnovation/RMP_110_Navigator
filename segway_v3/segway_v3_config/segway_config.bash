@@ -13,12 +13,12 @@ export SEGWAY_POWERS_PC_ONBOARD=true
 # - f710 - The Logitech F710 Wireless Joystick (in XINPUT mode)
 # - f310 - The Logitech F310 Wired Joystick (in XINPUT mode)
 # - (not supported yet) x3dp - The Logitech Extreme 3D Pro Joystick (not supported yet)   
-export SEGWAY_JOY_TYPE=f310
+export SEGWAY_JOY_TYPE=f710
 
 # Joystick deadzone (smaller value increases sensitivity to small movements)
 export SEGWAY_JOY_DEADZONE=0.1
 
-# Joystick configurations for joystick set VECTOR_JOY_IS_ATTACHED if the joystick
+# Joystick configurations for joystick set SEGWAY_JOY_IS_ATTACHED if the joystick
 # is physically attached to this PC
 if [ "$HOSTNAME" = sibot1 ]; then
     export SEGWAY_JOY_IS_ATTACHED=true
