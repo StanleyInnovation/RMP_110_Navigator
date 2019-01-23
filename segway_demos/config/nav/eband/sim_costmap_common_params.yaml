@@ -18,9 +18,8 @@ inflation_radius: 0.49
 obstacle_layer/footprint_clearing_enabled: true
 
 #raytrace_range must be less than max range of sensor.
-observation_sources: scan_multi
 observation_sources: segway_scan
-segway_scan: {topic:                   segway/filtered_scan,
+segway_scan: {topic:                 /segway/filtered_scan,
             data_type:               LaserScan,
             expected_update_rate:    0.2,
             observation_persistence: 0.0,

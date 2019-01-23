@@ -14,6 +14,7 @@ export SEGWAY_POWERS_PC_ONBOARD=true
 # - f310 - The Logitech F310 Wired Joystick (in XINPUT mode)
 # - (not supported yet) x3dp - The Logitech Extreme 3D Pro Joystick (not supported yet)   
 export SEGWAY_JOY_TYPE=f710
+export SEGWAY_HAS_ONBOARD_JOY=true
 
 # Joystick deadzone (smaller value increases sensitivity to small movements)
 export SEGWAY_JOY_DEADZONE=0.1

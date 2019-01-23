@@ -17,7 +17,7 @@
         <param name="rotational_collision_speed" value="1.0" />
         
         <rosparam file="$(find segway_demos)/config/assisted_teleop/base_planner_params.yaml" command="load"/>
-        <rosparam file="$(find segway_demos)/config/nav/costmap_common_params.yaml" command="load" ns="local_costmap" />
+        <rosparam file="$(find segway_demos)/config/assisted_teleop/costmap_common_params.yaml" command="load" ns="local_costmap" />
         <rosparam file="$(find segway_demos)/config/assisted_teleop/costmap_local.yaml" command="load"/>
         <remap from="teleop_cmd_vel" to="/segway/teleop/cmd_vel" />
         <remap from="cmd_vel" to="/segway/assisted_teleop/cmd_vel" />

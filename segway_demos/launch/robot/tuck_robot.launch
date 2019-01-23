@@ -1,8 +1,0 @@
-<launch>
-    <arg name="local" default="true"/>
-
-    <machine name="sibot1" address="sibot1" user="sibot" 
-                 env-loader="/home/sibot/env.sh" default="true" unless="$(arg local)"/>
-                 
-    <node pkg="segway_demos" type="tuck_robot" name="tuck_robot" output="log"/>
-</launch>

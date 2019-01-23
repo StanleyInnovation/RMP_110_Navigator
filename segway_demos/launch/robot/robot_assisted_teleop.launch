@@ -1,10 +1,5 @@
  <launch>
-        
-    <!-- Tuck the robot -->
-    <node pkg="si_utils" type="timed_roslaunch"
-        args="1 segway_demos tuck_robot.launch local:=false"
-        name="tuck_robot" output="screen"/>
-
+ 
     <!-- Bring up the joystick for control -->
     <node pkg="si_utils" type="timed_roslaunch"
         args="1 segway_remote_teleop segway_remote_teleop.launch"

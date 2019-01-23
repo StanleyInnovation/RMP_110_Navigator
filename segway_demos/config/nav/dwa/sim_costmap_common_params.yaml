@@ -23,6 +23,7 @@ static:
   
 obstacles_costmap2d:
   observation_sources: segway_scan
+  
   segway_scan: {topic:                   segway/filtered_scan,
                 data_type:               LaserScan,
                 expected_update_rate:    0.2,
