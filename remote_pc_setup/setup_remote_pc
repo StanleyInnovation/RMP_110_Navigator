@@ -66,14 +66,6 @@ ssh -oHostKeyAlgorithms='ssh-rsa' sibot@sibot1 "sleep 1; exit"
 echo -e "Copying ssh key to sibot1 (password is Welcome00)\n\nPress any key to continue...."
 read -n 1 -s
 ssh-copy-id sibot@sibot1
-echo 'Backing up workspace on sibot1......'
-sleep 2
-ssh sibot@sibot1 "tar -zcvf sibot1_original_src.tar.gz -C /home/sibot/segway_ws/src ."
-mkdir -p  ~/sibot_backups
-scp sibot@sibot1:/home/sibot/sibot1_original_src.tar.gz ~/sibot_backups/
-rm -rf ~/segway_ws
-mkdir -p ~/segway_ws/src
-tar xvzf ~/sibot_backups/sibot1_original_src.tar.gz -C ~/segway_ws/src/
 cd ~/segway_ws/src
 catkin_init_workspace
 cd ..
