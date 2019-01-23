@@ -43,61 +43,37 @@ else
     cat config/bash_rc_partial >> ~/.bashrc
 fi
 
-read -r -p "Setup the connection for the robot now? [y/N] " response
-if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
-then
-
-    echo -e "\nPlease connect to the robot wireless (password is Welcome00)\n\nPress any key to continue....\n"
-    read -n 1 -s
-    if [ ! -f ~/.ssh/id_rsa.pub ]; then
-        echo "Generating a new ssh key for the user..."
-        read -r -p "Do you want to proceed? " response
-        if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
-        then
-            echo "Please press enter for each step,this will configure a default ssh key"
-            echo "If you decide to do something different than that its assumed you know what you're doing"
-            echo "Press any key to continue......"
-            read -n 1 -s    
-            ssh-keygen -t rsa
-        else
-            exit 1
-        fi
-    fi
-
-    echo 'Connecting to sibot1 (password is Welcome00)......Press any key to continue'
-    read -n 1 -s
-    ssh -oHostKeyAlgorithms='ssh-rsa' sibot@sibot1 "sleep 1; exit"
-    echo -e "Copying ssh key to sibot1 (password is Welcome00)\n\nPress any key to continue...."
-    read -n 1 -s
-    ssh-copy-id sibot@sibot1
-    echo 'Backing up workspace on sibot1......'
-    sleep 2
-    ssh sibot@sibot1 "tar -zcvf sibot1_original_src.tar.gz -C /home/sibot/segway_ws/src ."
-    mkdir -p  ~/sibot_backups
-    scp sibot@sibot1:/home/sibot/sibot1_original_src.tar.gz ~/sibot_backups/
-    rm -rf ~/segway_ws
-    mkdir -p ~/segway_ws
-    read -r -p "Get code from JR2 (if no then then retrieve from github)? [y/N] " response
+echo -e "\nPlease connect to the robot wireless (password is Welcome00)\n\nPress any key to continue....\n"
+read -n 1 -s
+if [ ! -f ~/.ssh/id_rsa.pub ]; then
+    echo "Generating a new ssh key for the user..."
+    read -r -p "Do you want to proceed? " response
     if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]
     then
-        mkdir -p ~/segway_ws/src
-        tar xvzf ~/sibot_backups/sibot1_original_src.tar.gz -C ~/segway_ws/src/
-        tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
+        echo "Please press enter for each step,this will configure a default ssh key"
+        echo "If you decide to do something different than that its assumed you know what you're doing"
+        echo "Press any key to continue......"
+        read -n 1 -s    
+        ssh-keygen -t rsa
     else
-        git clone https://github.com/StanleyInnovation/stanford_jr2 src/
-        tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
+        exit 1
     fi
-else
-    rm -rf ~/segway_ws
-    mkdir -p ~/segway_ws
-    git clone https://github.com/StanleyInnovation/stanford_jr2 src/
-    tar xvzf ~/segway_ws/src/segway_v3_robot/third_party_sensors/ros_indigosdk-2.0.0/indigosdk-2.0.20.tar.gz ~/indigosdk-2.0.20
 fi
 
-cd ~/indigosdk-2.0.20
-mkdir build && cd build
-rm -f CMakeCache.txt && cmake -DOpenCV_DIR=/opt/ros/kinetic/share/OpenCV-3.3.1 -DUSE_OPENCV=1 ..
-cmake --build . --config Release
+echo 'Connecting to sibot1 (password is Welcome00)......Press any key to continue'
+read -n 1 -s
+ssh -oHostKeyAlgorithms='ssh-rsa' sibot@sibot1 "sleep 1; exit"
+echo -e "Copying ssh key to sibot1 (password is Welcome00)\n\nPress any key to continue...."
+read -n 1 -s
+ssh-copy-id sibot@sibot1
+echo 'Backing up workspace on sibot1......'
+sleep 2
+ssh sibot@sibot1 "tar -zcvf sibot1_original_src.tar.gz -C /home/sibot/segway_ws/src ."
+mkdir -p  ~/sibot_backups
+scp sibot@sibot1:/home/sibot/sibot1_original_src.tar.gz ~/sibot_backups/
+rm -rf ~/segway_ws
+mkdir -p ~/segway_ws/src
+tar xvzf ~/sibot_backups/sibot1_original_src.tar.gz -C ~/segway_ws/src/
 cd ~/segway_ws/src
 catkin_init_workspace
 cd ..
