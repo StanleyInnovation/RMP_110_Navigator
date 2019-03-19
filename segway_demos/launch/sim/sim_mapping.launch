@@ -19,7 +19,7 @@
         
     <!-- Bring up mapping -->
     <node pkg="si_utils" type="timed_roslaunch"
-        args="10 segway_demos mapping.launch sim:=true"
+        args="10 segway_demos mapping.launch sim:=true assisted_teleop:=true"
         name="mapping_bringup" output="screen"/> 
     
     <!-- Bring up rviz -->
