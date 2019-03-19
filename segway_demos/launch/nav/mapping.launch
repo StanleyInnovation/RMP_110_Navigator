@@ -9,11 +9,11 @@
                env-loader="/home/sibot/env.sh" default="true" unless="$(arg local)"/>
     
     <!--- Run Assisted Teleop -->
-    <include file="$(find segway_demos)/launch/assisted_teleop.launch" if="$(arg assisted_teleop)" >
+    <include file="$(find segway_demos)/launch/nav/assisted_teleop.launch" if="$(arg assisted_teleop)" >
         <arg name="local" value="$(arg local)"/>
     </include>
     
-    <include file="$(find segway_demos)/launch/sensor_nav.launch" if="$(arg sensor_nav)" >
+    <include file="$(find segway_demos)/launch/nav/sensor_nav.launch" if="$(arg sensor_nav)" >
         <arg name="local" value="$(arg local)"/>
     </include>
        
