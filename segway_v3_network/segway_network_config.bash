@@ -39,3 +39,7 @@ else
     fi
 fi
 
+echo "ROS NETWORK is $ROBOT_NETWORK"
+echo "ROS IP is $ROS_IP"
+echo "ROS MASTER_URI is $ROS_MASTER_URI"
+
